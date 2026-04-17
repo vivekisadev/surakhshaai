@@ -204,71 +204,94 @@ export default function UploadOneVideoPage() {
               )}
             </>
           ) : (
-            // Upload Progress
+            // Full-Screen System Analysis Animation
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="glass rounded-3xl p-12 text-center"
+              className="fixed inset-0 z-[100] bg-black overflow-hidden font-mono"
             >
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-                className="w-20 h-20 mx-auto mb-6"
-              >
-                <svg className="w-full h-full text-neon-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </motion.div>
-
-              <h3 className="text-2xl font-bold mb-2">Analyzing Your Video</h3>
-              <p className="text-white/60 mb-8">
-                {analyzing ? 'Running AI detection models...' : 'Uploading video...'}
-              </p>
-
-              {/* Progress Bar */}
-              <div className="space-y-4">
-                <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                  <motion.div
-                    className="h-full bg-gradient-to-r from-neon-blue to-neon-green"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${uploadProgress}%` }}
-                    transition={{ duration: 0.3 }}
-                  />
-                </div>
-                <p className="text-sm text-white/60">{uploadProgress}% Complete</p>
+              {/* Massive Layout Pixel Grid */}
+              <div className="absolute inset-0 grid grid-cols-12 md:grid-cols-20 lg:grid-cols-24 gap-1 opacity-50 p-2">
+                {Array.from({ length: 480 }).map((_, i) => {
+                  const isRare = (i % 17 === 0);
+                  const isUltraRare = (i % 43 === 0);
+                  return (
+                    <motion.div
+                      key={i}
+                      animate={{ 
+                        opacity: [0.1, isRare ? 1 : Math.random() * 0.5, 0.1],
+                        backgroundColor: isUltraRare ? '#ff0055' : isRare ? '#00ffcc' : '#1a1a1a',
+                        scale: [1, isUltraRare ? 1.2 : 1, 1]
+                      }}
+                      transition={{ 
+                        duration: Math.random() * 0.8 + 0.2, 
+                        repeat: Infinity, 
+                        delay: Math.random() * 2,
+                        ease: "steps(3)" // Makes it snap like actual pixels
+                      }}
+                      className="w-full h-full rounded-[1px]"
+                    />
+                  )
+                })}
               </div>
 
-              {/* Step Indicators */}
-              <div className="mt-8 space-y-3 text-left max-w-sm mx-auto">
-                {[
-                  { done: uploadProgress > 25, label: 'Uploading video' },
-                  { done: uploadProgress > 50, label: 'Processing frames' },
-                  { done: uploadProgress > 75, label: 'Running detection models' },
-                  { done: uploadProgress > 90, label: 'Generating results' },
-                ].map((step, idx) => (
+              {/* Dynamic Overlay HUD */}
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-neon-blue/5 to-black pointer-events-none" />
+              <motion.div 
+                className="absolute left-0 right-0 h-2 bg-neon-green shadow-[0_0_40px_rgba(0,255,157,1)] z-20"
+                animate={{ top: ['-10%', '110%', '-10%'] }}
+                transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+              />
+
+              {/* Central Information Box */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center z-30 pointer-events-none">
+                <div className="bg-black/80 border border-neon-blue/40 backdrop-blur-sm p-10 rounded-xl shadow-[0_0_100px_rgba(0,255,204,0.15)] text-center max-w-lg w-full">
+                  
                   <motion.div
-                    key={step.label}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: idx * 0.1 }}
-                    className="flex items-center gap-3"
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+                    className="w-24 h-24 mx-auto mb-8 border-4 border-dashed border-neon-green rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(0,255,157,0.4)]"
                   >
-                    {step.done ? (
-                      <div className="w-5 h-5 rounded-full bg-neon-green flex items-center justify-center">
-                        <svg className="w-3 h-3 text-black" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                    ) : (
-                      <motion.div
-                        animate={{ scale: [1, 1.2, 1] }}
-                        transition={{ duration: 1, repeat: Infinity }}
-                        className="w-5 h-5 rounded-full bg-neon-blue/50"
-                      />
-                    )}
-                    <span className={step.done ? 'text-white/60' : 'text-white'}>{step.label}</span>
+                    <div className="w-12 h-12 bg-neon-blue rounded-full animate-pulse" />
                   </motion.div>
-                ))}
+
+                  <h3 className="text-4xl font-black mb-4 uppercase tracking-[0.2em] text-white">
+                    {analyzing ? 'Neural Matrix' : 'Uplink Est.'}
+                  </h3>
+                  <p className="text-neon-blue text-lg mb-8 font-bold tracking-widest animate-pulse">
+                    {analyzing ? 'DECONSTRUCTING VIDEO FRAMES...' : 'TRANSMITTING ENCRYPTED PACKETS...'}
+                  </p>
+
+                  <div className="space-y-6 text-left">
+                    {/* Progress Bar */}
+                    <div>
+                      <div className="flex justify-between text-xs text-white/50 mb-2 font-bold tracking-widest">
+                        <span>SYSTEM LOAD</span>
+                        <span>{uploadProgress}%</span>
+                      </div>
+                      <div className="h-4 bg-white/5 rounded-full overflow-hidden border border-white/10">
+                        <motion.div
+                          className="h-full bg-gradient-to-r from-neon-blue to-neon-green"
+                          initial={{ width: 0 }}
+                          animate={{ width: `${uploadProgress}%` }}
+                          transition={{ duration: 0.3 }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Step Processing Log */}
+                    <div className="bg-black p-4 rounded border border-white/5 h-40 overflow-hidden relative">
+                      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black z-10" />
+                      <div className="text-[10px] space-y-2 text-white/40">
+                        <p className="text-neon-green">{"> "} Initializing visual cortical extraction...</p>
+                        <p>{"> "} Bounding boxes mapped: {Math.floor(Math.random() * 1000)} objects</p>
+                        <p className="text-neon-blue">{"> "} Applying spatial geometry algorithms...</p>
+                        <p>{"> "} Cross-referencing threat vectors...</p>
+                        <p className="text-white">{"> "} Generating frame-by-frame anomalies...</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </motion.div>
           )}

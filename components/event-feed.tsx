@@ -128,7 +128,6 @@ export function EventFeed({
               initial={{ opacity: 0, y: -20 }}
               animate={{ 
                 opacity: hasAnyHighlight ? (isHighlighted ? 1 : 0.4) : 1, 
-                scale: isHighlighted ? 1.05 : 1,
                 y: 0 
               }}
               exit={{ opacity: 0, x: -100 }}

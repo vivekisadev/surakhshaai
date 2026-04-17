@@ -2,6 +2,9 @@
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
 
+/* ── Google Fonts ─────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@300;400;500;700&display=swap');
+
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -24,11 +27,6 @@
     --input: 0 0% 89.8%;
     --ring: 0 0% 3.9%;
     --radius: 0.5rem;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
   }
 
   .dark {
@@ -51,71 +49,40 @@
     --border: 0 0% 14.9%;
     --input: 0 0% 14.9%;
     --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
   }
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
+  * { @apply border-border; }
+  body { @apply bg-background text-foreground; }
 }
 
+/* ── CSS Custom Properties ────────────────────────────────────────────────── */
 :root {
   --foreground-rgb: 255, 255, 255;
-  --background-start-rgb: 0, 0, 0;
-  --background-end-rgb: 5, 5, 15;
-  
-  /* Premium Palette */
-  --neon-blue: #3b82f6;
-  --neon-cyan: #06b6d4;
+  --neon-blue:   #3b82f6;
+  --neon-cyan:   #06b6d4;
   --neon-purple: #8b5cf6;
-  --neon-green: #10b981;
-  --glass-bg: rgba(255, 255, 255, 0.03);
-  --glass-border: rgba(255, 255, 255, 0.08);
+  --neon-green:  #10b981;
+  --neon-red:    #ef4444;
+  --glass-bg:    rgba(255, 255, 255, 0.03);
+  --glass-border:rgba(255, 255, 255, 0.08);
+  --font-mono:   'JetBrains Mono', 'Geist Mono', monospace;
 }
 
+/* ── Base Body ────────────────────────────────────────────────────────────── */
 body {
+  font-family: 'Inter', 'Geist', system-ui, sans-serif;
   color: rgb(var(--foreground-rgb));
-  background: radial-gradient(circle at 50% -20%, #1e1b4b 0%, #000 70%);
+  background: radial-gradient(ellipse 120% 80% at 50% -10%, #0f172a 0%, #09090b 60%);
   min-height: 100vh;
   font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
 }
 
-.bg-radial-gradient {
-  background: radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.1) 0%, rgba(0, 0, 0, 0) 80%);
-}
+/* ── Typography helpers ───────────────────────────────────────────────────── */
+.font-mono-display { font-family: var(--font-mono); }
 
-.glow-text {
-  text-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
-}
-
-/* Premium Precision Glass */
-.glass {
-  background: rgba(255, 255, 255, 0.02);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.5);
-}
-
-.glass-hover {
-  transition: all 0.2s ease-out;
-}
-
-.glass-hover:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  transform: translateY(-1px);
-}
-
-/* Premium Gradient Text */
 .gradient-text {
   background: linear-gradient(135deg, #fff 0%, #a5b4fc 50%, #6366f1 100%);
   -webkit-background-clip: text;
@@ -124,143 +91,225 @@ body {
 }
 
 .gradient-text-blue {
-  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+  background: linear-gradient(135deg, #93c5fd 0%, #3b82f6 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-/* Precision Buttons */
-.btn-primary {
-  @apply relative overflow-hidden px-6 py-2.5 rounded-sm font-mono text-[10px] uppercase tracking-widest transition-all duration-300;
-  background: #3b82f6;
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+.gradient-text-red {
+  background: linear-gradient(135deg, #fca5a5 0%, #ef4444 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
+.glow-text { text-shadow: 0 0 24px rgba(59,130,246,0.55); }
+
+/* ── Glass Surfaces ───────────────────────────────────────────────────────── */
+.glass {
+  background: rgba(255,255,255,0.025);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+.glass-hover { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+.glass-hover:hover {
+  background: rgba(255,255,255,0.05);
+  border-color: rgba(255,255,255,0.12);
+  transform: translateY(-1px);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+}
+
+/* ── Buttons ──────────────────────────────────────────────────────────────── */
+.btn-primary {
+  @apply relative overflow-hidden px-6 py-2.5 font-mono text-[10px] uppercase tracking-widest transition-all duration-300;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: white;
+  border: 1px solid rgba(99,130,255,0.3);
+  border-radius: 6px;
+  box-shadow: 0 0 0 0 rgba(59,130,246,0.4);
+}
+.btn-primary::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+.btn-primary:hover::before { opacity: 1; }
 .btn-primary:hover {
-  @apply bg-blue-600 shadow-[0_0_15px_rgba(59,130,246,0.5)];
+  box-shadow: 0 0 20px rgba(59,130,246,0.45), 0 4px 16px rgba(0,0,0,0.4);
+  border-color: rgba(99,130,255,0.5);
 }
 
 .btn-secondary {
-  @apply border border-neutral-800 px-6 py-2.5 rounded-sm font-mono text-[10px] uppercase tracking-widest transition-all duration-300 bg-neutral-900;
+  @apply border border-neutral-800 px-6 py-2.5 font-mono text-[10px] uppercase tracking-widest transition-all duration-300 bg-neutral-900/80;
   color: #a3a3a3;
+  border-radius: 6px;
 }
-
 .btn-secondary:hover {
-  @apply border-neutral-700 bg-neutral-800 text-neutral-200;
+  @apply border-neutral-600 bg-neutral-800 text-neutral-200;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.05);
 }
 
-/* Mesh Gradients */
-.mesh-gradient {
-  background-color: #000;
-  background-image: 
-    radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
-    radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
-    radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
-}
+/* ── Camera / CCTV specific ───────────────────────────────────────────────── */
 
-/* Card Animations */
-.card-hover {
-  @apply transition-all duration-300 hover:scale-105 hover:shadow-lg;
-}
-
-.card-glow {
-  @apply transition-all duration-300 hover:shadow-glow-blue;
-}
-
-/* Scroll Animation Utilities */
-.scroll-fade-in {
-  opacity: 0;
-  animation: fade-in 0.6s ease-out forwards;
-}
-
-.scroll-slide-in-left {
-  opacity: 0;
-  animation: slide-in-left 0.6s ease-out forwards;
-}
-
-.scroll-slide-in-right {
-  opacity: 0;
-  animation: slide-in-right 0.6s ease-out forwards;
-}
-
-.scroll-scale-in {
-  opacity: 0;
-  animation: scale-in 0.6s ease-out forwards;
-}
-
-/* Modern Divider */
-.divider-gradient {
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-  height: 1px;
-}
-
-/* Accent Line */
-.accent-line {
-  position: relative;
-}
-
-.accent-line::after {
+/* Scanline overlay — gives live camera a CRT realism effect */
+.camera-scanline::after {
   content: '';
   position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #206EF6, transparent);
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 2px,
+    rgba(0,0,0,0.04) 2px,
+    rgba(0,0,0,0.04) 4px
+  );
+  pointer-events: none;
+  z-index: 5;
 }
 
-/* Keyframes for animations */
-@keyframes blink {
-  0% {
-    opacity: 0;
-  }
-  50% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-  }
+/* Moving scan-bar that sweeps down — remove from production if too heavy */
+.camera-sweep::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  height: 60px;
+  background: linear-gradient(to bottom, transparent, rgba(59,130,246,0.06), transparent);
+  animation: sweep 4s linear infinite;
+  pointer-events: none;
+  z-index: 6;
 }
 
-.animate-blink {
-  animation: blink 1s infinite;
+@keyframes sweep {
+  0%   { top: -60px; }
+  100% { top: 100%; }
 }
 
-/* Additional styles for consistency */
-.bg-foreground {
-  background-color: white;
+/* Pulsing alert border on dangerous camera */
+.camera-alert {
+  animation: alert-pulse 1.5s ease-in-out infinite;
+}
+@keyframes alert-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); border-color: rgba(239,68,68,0.6); }
+  50%       { box-shadow: 0 0 16px 2px rgba(239,68,68,0.25); border-color: rgba(239,68,68,0.9); }
 }
 
-.text-background {
-  color: black;
+/* ── Alert Ticker ─────────────────────────────────────────────────────────── */
+.ticker-wrap {
+  overflow: hidden;
+  white-space: nowrap;
+}
+.ticker-content {
+  display: inline-block;
+  animation: ticker 40s linear infinite;
+  will-change: transform;
+}
+.ticker-content:hover { animation-play-state: paused; }
+
+@keyframes ticker {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }
 
-@media (prefers-color-scheme: dark) {
-  .bg-foreground {
-    background-color: black;
-  }
-
-  .text-background {
-    color: white;
-  }
+/* ── Gradients & Backgrounds ──────────────────────────────────────────────── */
+.bg-radial-gradient {
+  background: radial-gradient(circle at 50% 50%, rgba(59,130,246,0.08) 0%, transparent 70%);
 }
 
-.custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-track {
-  @apply bg-neutral-950;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  @apply bg-neutral-800 hover:bg-neutral-700 transition-colors;
+.mesh-gradient {
+  background-color: #09090b;
+  background-image:
+    radial-gradient(at 0% 0%,   hsla(220,80%,12%,0.8) 0, transparent 50%),
+    radial-gradient(at 100% 0%, hsla(280,60%,10%,0.6) 0, transparent 50%),
+    radial-gradient(at 50% 100%,hsla(200,80%,10%,0.4) 0, transparent 60%);
 }
 
 .analyzer-grid {
-  background-image: linear-gradient(to right, rgba(128, 128, 128, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(128, 128, 128, 0.05) 1px, transparent 1px);
-  background-size: 20px 20px;
+  background-image:
+    linear-gradient(to right,  rgba(128,128,128,0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(128,128,128,0.05) 1px, transparent 1px);
+  background-size: 24px 24px;
 }
+
+/* ── Scroll Animations ────────────────────────────────────────────────────── */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.scroll-fade-in        { opacity: 0; animation: fade-in       0.6s ease-out forwards; }
+.scroll-slide-in-left  { opacity: 0; animation: slide-in-left 0.6s ease-out forwards; }
+.scroll-slide-in-right { opacity: 0; animation: slide-in-right 0.6s ease-out forwards; }
+.scroll-scale-in       { opacity: 0; animation: scale-in      0.6s ease-out forwards; }
+
+/* ── Misc Helpers ─────────────────────────────────────────────────────────── */
+.divider-gradient {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+  height: 1px;
+}
+
+.accent-line { position: relative; }
+.accent-line::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #3b82f6, transparent);
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 0; }
+  50%       { opacity: 1; }
+}
+.animate-blink { animation: blink 1s infinite; }
+
+/* Status dot shimmer */
+@keyframes status-shimmer {
+  0%   { box-shadow: 0 0 0 0 rgba(16,185,129,0.6); }
+  70%  { box-shadow: 0 0 0 6px rgba(16,185,129,0); }
+  100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+}
+.status-dot-live { animation: status-shimmer 2s ease-out infinite; }
+
+/* ── Custom Scrollbar ─────────────────────────────────────────────────────── */
+.custom-scrollbar::-webkit-scrollbar       { width: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { @apply bg-neutral-800; border-radius: 2px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { @apply bg-neutral-700; }
+
+* { scrollbar-width: thin; scrollbar-color: #27272a transparent; }
+
+/* ── Card Effects ─────────────────────────────────────────────────────────── */
+.card-hover { @apply transition-all duration-300; }
+.card-hover:hover { transform: translateY(-2px); }
+
+/* Premium inner glow on focused cards */
+.card-glow-focus:focus-within {
+  box-shadow: 0 0 0 1px rgba(59,130,246,0.3), 0 0 20px rgba(59,130,246,0.08);
+}
+
+/* ── NProgress bar override (blue) ───────────────────────────────────────── */
+#nprogress .bar { background: #3b82f6 !important; height: 2px !important; }
+#nprogress .peg { box-shadow: 0 0 10px #3b82f6, 0 0 5px #3b82f6 !important; }
+
+/* ── Utility fixes ────────────────────────────────────────────────────────── */
+.bg-foreground { background-color: black; }
+.text-background { color: white; }

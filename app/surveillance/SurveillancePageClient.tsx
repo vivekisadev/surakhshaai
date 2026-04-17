@@ -17,15 +17,15 @@ import { CameraModal } from "@/components/camera-modal"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 const INCIDENT_COLORS: Record<string, { dot: string; badge: string; label: string }> = {
-  aggression:  { dot: "bg-red-500",    badge: "border-red-500/30 bg-red-500/10 text-red-400",    label: "Aggression"   },
-  assault:     { dot: "bg-red-500",    badge: "border-red-500/30 bg-red-500/10 text-red-400",    label: "Assault"      },
-  negligence:  { dot: "bg-yellow-500", badge: "border-yellow-500/30 bg-yellow-500/10 text-yellow-400", label: "Negligence" },
+  aggression: { dot: "bg-red-500", badge: "border-red-500/30 bg-red-500/10 text-red-400", label: "Aggression" },
+  assault: { dot: "bg-red-500", badge: "border-red-500/30 bg-red-500/10 text-red-400", label: "Assault" },
+  negligence: { dot: "bg-yellow-500", badge: "border-yellow-500/30 bg-yellow-500/10 text-yellow-400", label: "Negligence" },
   abandonment: { dot: "bg-yellow-500", badge: "border-yellow-500/30 bg-yellow-500/10 text-yellow-400", label: "Negligence" },
-  fall:        { dot: "bg-emerald-500",badge: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400", label: "Fall"  },
-  unauthorized:{ dot: "bg-purple-500", badge: "border-purple-500/30 bg-purple-500/10 text-purple-400", label: "Unauth." },
-  drug:        { dot: "bg-blue-500",   badge: "border-blue-500/30 bg-blue-500/10 text-blue-400",  label: "Drug"         },
-  fire:        { dot: "bg-orange-500", badge: "border-orange-500/30 bg-orange-500/10 text-orange-400", label: "Fire"    },
-  harassment:  { dot: "bg-pink-500",   badge: "border-pink-500/30 bg-pink-500/10 text-pink-400",  label: "Harassment"  },
+  fall: { dot: "bg-emerald-500", badge: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400", label: "Fall" },
+  unauthorized: { dot: "bg-purple-500", badge: "border-purple-500/30 bg-purple-500/10 text-purple-400", label: "Unauth." },
+  drug: { dot: "bg-blue-500", badge: "border-blue-500/30 bg-blue-500/10 text-blue-400", label: "Drug" },
+  fire: { dot: "bg-orange-500", badge: "border-orange-500/30 bg-orange-500/10 text-orange-400", label: "Fire" },
+  harassment: { dot: "bg-pink-500", badge: "border-pink-500/30 bg-pink-500/10 text-pink-400", label: "Harassment" },
 }
 
 function getIncidentStyle(crimeTypes: string[]) {
@@ -173,7 +173,42 @@ export default function SurveillancePageClient() {
           {/* ── LEFT: Camera grid + selector ─────────────────────────────── */}
           <div className="xl:col-span-9 space-y-6">
 
-            {/* Camera Selector Panel */}
+            {/* ── Alert Ticker Strip ──────────────────────────────────────────── */}
+          <div className="mb-6 rounded-xl overflow-hidden border border-red-500/15 bg-red-500/[0.04]">
+            <div className="flex items-center">
+              <div className="flex-shrink-0 flex items-center gap-2 px-3 py-2 bg-red-500/10 border-r border-red-500/15">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
+                <span className="text-[9px] font-mono uppercase tracking-widest text-red-400 whitespace-nowrap">Alert Feed</span>
+              </div>
+              <div className="flex-1 overflow-hidden ticker-wrap py-2">
+                <div className="ticker-content">
+                  {[
+                    "🔴 HIGH PRIORITY · Patient aggression reported in ER Triage Zone A",
+                    "🟡 WARNING · Staff negligence flagged in Ward B nursing station",
+                    "🔴 CRITICAL · Unauthorized access attempt at ICU restricted zone",
+                    "🟡 NOTICE · Overcrowding detected in Emergency Waiting Area — 14 persons",
+                    "🔴 HIGH PRIORITY · Patient fall risk detected in Ward C corridor",
+                    "🟡 WARNING · Pharmacy storage access outside authorized hours",
+                    "🔴 CRITICAL · Fire/smoke detector triggered near Server Room",
+                    "🟢 RESOLVED · Security team responded to incident in Gate-Main — 2m ago",
+                    /* duplicate for seamless loop */
+                    "🔴 HIGH PRIORITY · Patient aggression reported in ER Triage Zone A",
+                    "🟡 WARNING · Staff negligence flagged in Ward B nursing station",
+                    "🔴 CRITICAL · Unauthorized access attempt at ICU restricted zone",
+                    "🟡 NOTICE · Overcrowding detected in Emergency Waiting Area — 14 persons",
+                    "🔴 HIGH PRIORITY · Patient fall risk detected in Ward C corridor",
+                    "🟡 WARNING · Pharmacy storage access outside authorized hours",
+                    "🔴 CRITICAL · Fire/smoke detector triggered near Server Room",
+                    "🟢 RESOLVED · Security team responded to incident in Gate-Main — 2m ago",
+                  ].map((msg, i) => (
+                    <span key={i} className="inline-flex items-center text-[10px] font-mono text-neutral-400 mr-10">
+                      {msg}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
             <div className="bg-neutral-900/80 border border-neutral-800 rounded-xl overflow-hidden">
               <div className="w-full flex items-center justify-between px-4 py-3 hover:bg-neutral-800/30 transition-colors">
                 {/* Clickable label area */}
@@ -325,16 +360,16 @@ export default function SurveillancePageClient() {
             {/* Camera Grid */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Monitor className="w-3.5 h-3.5 text-blue-400" />
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-400">Live Camera Network</span>
-                  {visibleCameras.length < totalCams && (
-                    <span className="px-1.5 py-0.5 rounded bg-neutral-800 border border-neutral-700 text-[9px] font-mono text-neutral-500">
-                      {visibleCameras.length} visible
-                    </span>
-                  )}
-                </div>
-              </div>
+                      <div className="flex items-center gap-2">
+                        <Monitor className="w-3.5 h-3.5 text-blue-400" />
+                        <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-400">Live Camera Network</span>
+                        {visibleCameras.length < totalCams && (
+                          <span className="px-1.5 py-0.5 rounded bg-neutral-800 border border-neutral-700 text-[9px] font-mono text-neutral-500">
+                            {visibleCameras.length} visible
+                          </span>
+                        )}
+                      </div>
+                    </div>
 
               {visibleCameras.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 border border-dashed border-neutral-800 rounded-xl">
@@ -366,15 +401,14 @@ export default function SurveillancePageClient() {
                         className="group"
                       >
                         <div
-                          className={`relative rounded-xl overflow-hidden border transition-all duration-200 bg-neutral-900 cursor-pointer ${
-                            isHighlighted ? "border-blue-500/60 shadow-[0_0_20px_rgba(59,130,246,0.12)]" : "border-neutral-800 hover:border-neutral-600"
-                          }`}
+                          className={`relative rounded-xl overflow-hidden border transition-all duration-200 bg-neutral-900 cursor-pointer ${isHighlighted ? "border-blue-500/60 shadow-[0_0_20px_rgba(59,130,246,0.12)]" : "border-neutral-800 hover:border-neutral-600"
+                            }`}
                           onClick={() => setSelectedCamera(camera.id)}
                           onMouseEnter={() => setHoveredCamera(camera.id)}
                           onMouseLeave={() => setHoveredCamera(null)}
                         >
                           {/* Video feed — 16:9 */}
-                          <div className="aspect-video relative">
+                          <div className="aspect-video relative camera-scanline camera-sweep">
                             <CameraFeed camera={camera} onTimeUpdate={time => handleTimeUpdate(camera.id, time)} />
                           </div>
 
@@ -383,8 +417,10 @@ export default function SurveillancePageClient() {
                             <div className="flex items-start justify-between gap-2">
                               <div className="min-w-0">
                                 <div className="flex items-center gap-1.5 mb-0.5">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
-                                  <span className="text-[10px] font-mono font-semibold text-neutral-200 uppercase tracking-wider truncate">{camera.name}</span>
+                                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0 animate-pulse" />
+                                  <span className="text-[10px] font-mono font-semibold text-neutral-200 uppercase tracking-wider truncate">LIVE</span>
+                                  <span className="mx-1 text-neutral-700">·</span>
+                                  <span className="text-[10px] font-mono font-semibold text-neutral-300 uppercase tracking-wider truncate">{camera.name}</span>
                                 </div>
                                 <p className="text-[9px] text-neutral-600 font-mono truncate leading-none">{camera.address}</p>
                               </div>
@@ -424,6 +460,23 @@ export default function SurveillancePageClient() {
 
           {/* ── RIGHT SIDEBAR ────────────────────────────────────────────── */}
           <aside className="xl:col-span-3 space-y-4 sticky top-20">
+
+            {/* Event stream */}
+            <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <Zap className="w-3.5 h-3.5 text-yellow-400" />
+                <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-400">Live Event Stream</span>
+              </div>
+              <div className="max-h-[380px] overflow-y-auto pr-1" style={{ scrollbarWidth: "thin", scrollbarColor: "#27272a transparent" }}>
+                <EventFeed
+                  events={events}
+                  videoTimes={videoTimes}
+                  onEventHover={setHoveredCamera}
+                  onEventClick={handleEventClick}
+                  highlightCameraId={hoveredCamera}
+                />
+              </div>
+            </div>
 
             {/* System Stats */}
             <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 space-y-4">
@@ -479,22 +532,7 @@ export default function SurveillancePageClient() {
               </div>
             </div>
 
-            {/* Event stream */}
-            <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <Zap className="w-3.5 h-3.5 text-yellow-400" />
-                <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-400">Live Event Stream</span>
-              </div>
-              <div className="max-h-[380px] overflow-y-auto pr-1" style={{ scrollbarWidth: "thin", scrollbarColor: "#27272a transparent" }}>
-                <EventFeed
-                  events={events}
-                  videoTimes={videoTimes}
-                  onEventHover={setHoveredCamera}
-                  onEventClick={handleEventClick}
-                  highlightCameraId={hoveredCamera}
-                />
-              </div>
-            </div>
+
           </aside>
         </div>
       </main>
