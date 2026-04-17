@@ -15,6 +15,63 @@ import { EventFeed } from "@/components/event-feed"
 import { StatsOverview } from "@/components/stats-overview"
 import { CameraModal } from "@/components/camera-modal"
 
+// ─── Plugin Manager Component ───────────────────────────────────────────────
+function PluginManager() {
+  const [plugins, setPlugins] = useState<Record<string, boolean>>({})
+  const [loading, setLoading] = useState(true)
+
+  const fetchPlugins = async () => {
+    try {
+      const res = await fetch("http://localhost:8000/plugins")
+      const data = await res.json()
+      setPlugins(data)
+      setLoading(false)
+    } catch (e) {
+      console.error("Failed to fetch plugins", e)
+    }
+  }
+
+  useEffect(() => {
+    fetchPlugins()
+    const interval = setInterval(fetchPlugins, 5000) // Poll every 5s
+    return () => clearInterval(interval)
+  }, [])
+
+  const togglePlugin = async (name: string, current: boolean) => {
+    try {
+      setPlugins(prev => ({ ...prev, [name]: !current }))
+      await fetch(`http://localhost:8000/toggle_plugin/${name}/${!current}`)
+    } catch (e) {
+      console.error("Failed to toggle plugin", e)
+    }
+  }
+
+  if (loading) return null
+
+  return (
+    <div className="flex flex-wrap gap-2 py-3 px-4 bg-neutral-900/50 border-y border-neutral-800/50">
+      <div className="flex items-center gap-2 mr-4">
+        <Zap className="w-3.5 h-3.5 text-yellow-400 font-bold" />
+        <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-500">AI Modules</span>
+      </div>
+      {Object.entries(plugins).map(([name, enabled]) => (
+        <button
+          key={name}
+          onClick={() => togglePlugin(name, enabled)}
+          className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md border font-mono text-[9px] uppercase tracking-wider transition-all duration-200 ${
+            enabled 
+              ? "bg-blue-500/10 border-blue-500/40 text-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.1)]" 
+              : "bg-neutral-800/30 border-neutral-800 text-neutral-600 hover:border-neutral-700 hover:text-neutral-400"
+          }`}
+        >
+          <div className={`w-1.5 h-1.5 rounded-full ${enabled ? "bg-blue-400 animate-pulse" : "bg-neutral-700"}`} />
+          {name}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 const INCIDENT_COLORS: Record<string, { dot: string; badge: string; label: string }> = {
   aggression: { dot: "bg-red-500", badge: "border-red-500/30 bg-red-500/10 text-red-400", label: "Aggression" },
@@ -209,7 +266,9 @@ export default function SurveillancePageClient() {
               </div>
             </div>
           </div>
-            <div className="bg-neutral-900/80 border border-neutral-800 rounded-xl overflow-hidden">
+            <PluginManager />
+
+            <div className="bg-neutral-900/80 border border-neutral-800 rounded-xl overflow-hidden mt-6">
               <div className="w-full flex items-center justify-between px-4 py-3 hover:bg-neutral-800/30 transition-colors">
                 {/* Clickable label area */}
                 <div

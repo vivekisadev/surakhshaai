@@ -9,6 +9,10 @@
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
+/venv_fix
+/python_backend/venv_fix
+/python_backend/venv_fix/Lib/site-packages
+/python_backend/venv_fix/Lib
 
 # testing
 /coverage
