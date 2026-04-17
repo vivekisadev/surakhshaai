@@ -307,16 +307,41 @@ export const initialEvents: Event[] = Array.from({ length: 15 }, (_, i) => ({
 	description: "Hospital security incident detected",
 }));
 
+// Maps hospital camera names → bounding box file base-name
+// Derived from camera.videoUrl (strip /videos/ prefix and .mp4 extension)
+const CAMERA_BOX_MAP: Record<string, string> = {
+  // Emergency Ward
+  "ER-Triage-01":    "Shoplifting0",
+  "ER-Triage-02":    "Shoplifting1",
+  "ER-Triage-03":    "Shoplifting2",
+  // General Ward
+  "Ward-B-Corridor": "Fighting0",
+  "Ward-B-Nursing":  "Fighting1",
+  "Ward-C-Patient":  "Fighting2",
+  "Ward-A-Entry":    "Fighting3",
+  // Pharmacy
+  "Pharmacy-Main":      "Robbery1",
+  "Pharmacy-Storage":   "Robbery2",
+  "Pharmacy-Restricted":"Robbery3",
+  // ICU
+  "ICU-Zone-A":   "Stealing1",
+  // Main Entrance
+  "Gate-Main":    "Vandalism3",
+}
+
 export async function getBoundingBoxData(videoName: string): Promise<BoundingBoxData | null> {
+  // Resolve the actual bounding-box file name from the hospital camera name
+  const boxName = CAMERA_BOX_MAP[videoName] ?? videoName
+
   try {
-    const response = await fetch(`/bounding_boxes/${videoName}_boxes.json`)
+    const response = await fetch(`/bounding_boxes/${boxName}_boxes.json`)
     if (!response.ok) {
-      console.error(`Failed to load bounding box data for ${videoName}`)
+      // Silently return null — not all cameras have box data, this is expected
       return null
     }
     return await response.json()
-  } catch (error) {
-    console.error(`Error loading bounding box data for ${videoName}:`, error)
+  } catch {
+    // Network/parse error — silently ignore
     return null
   }
 }

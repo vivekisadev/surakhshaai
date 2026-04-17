@@ -3,213 +3,193 @@ import { NextRequest, NextResponse } from 'next/server'
 /**
  * SURAKSHA AI — Hugging Face Multi-Model Inference Router
  *
- * This endpoint runs parallel inference using FREE Hugging Face models
- * to reduce load on the Google Gemini API. Each model is specialized
- * for a specific hospital security detection task.
+ * Models (all FREE via HF Inference API):
+ * ────────────────────────────────────────────────────────────────────
+ *  Task                    Model
+ *  ─────────────────────────────────────────────────────────────────
+ *  Fire / Smoke            EdBianchi/vit-fire-detection
+ *  Emotion / Aggression    dima806/facial_emotions_image_detection
+ *  Sexual Harassment       Falconsai/nsfw_image_classification
+ *  Person / Crowd Count    facebook/detr-resnet-50
+ * ────────────────────────────────────────────────────────────────────
  *
- * Models used (all free via HF Inference API):
- * ─────────────────────────────────────────────────────────────
- * Fire/Smoke Detection:
- *   → Model: "EdBianchi/vit-fire-detection"
- *   → API key env: HF_API_KEY
- *
- * Face & Person Detection (aggression pose):
- *   → Model: "Salesforce/blip-image-captioning-base" (captioning for scene description)
- *   → Alternatively: "facebook/detr-resnet-50" (object detection)
- *   → API key env: HF_API_KEY (same key)
- *
- * Emotion / Aggression Detection:
- *   → Model: "dima806/facial_emotions_image_detection"
- *   → API key env: HF_API_KEY (same key)
- *
- * Violence / Action Classification:
- *   → Model: "nateraw/vit-age-classifier" (used as base, fine-tunable)
- *   → Better: "microsoft/resnet-50" with custom labels
- *   → API key env: HF_API_KEY (same key)
- *
- * ─────────────────────────────────────────────────────────────
- * HOW TO GET YOUR FREE HF API KEY:
- *   1. Go to https://huggingface.co and sign up (free)
- *   2. Go to Settings → Access Tokens
- *   3. Create a token with "Read" permission
- *   4. Add to .env.local as: HF_API_KEY=hf_xxxxxxxxxxxxxxxxxx
- * ─────────────────────────────────────────────────────────────
+ * HF_API_KEY setup:
+ *   1. Go to https://huggingface.co → Sign up (free)
+ *   2. Settings → Access Tokens → New Token (Read)
+ *   3. Add to .env.local:  HF_API_KEY=hf_xxxxxxxxxxxxxxxxxxxx
  */
 
 const HF_API_KEY = process.env.HF_API_KEY
-
-// Hugging Face Inference API base
 const HF_BASE = 'https://api-inference.huggingface.co/models'
 
-// Model endpoints
 const MODELS = {
-  fire: `${HF_BASE}/EdBianchi/vit-fire-detection`,
-  emotion: `${HF_BASE}/dima806/facial_emotions_image_detection`,
-  captioning: `${HF_BASE}/Salesforce/blip-image-captioning-base`,
-  objectDetection: `${HF_BASE}/facebook/detr-resnet-50`,
+  fire:       `${HF_BASE}/EdBianchi/vit-fire-detection`,
+  emotion:    `${HF_BASE}/dima806/facial_emotions_image_detection`,
+  harassment: `${HF_BASE}/Falconsai/nsfw_image_classification`,
+  crowd:      `${HF_BASE}/facebook/detr-resnet-50`,
 }
 
-async function callHFModel(modelUrl: string, imageBlob: Blob, taskHint: string) {
+const CONFIDENCE_THRESHOLD = 0.55
+
+// ─── Call a HF model ───────────────────────────────────────────────────────
+async function callModel(url: string, blob: Blob, label: string) {
   try {
-    const res = await fetch(modelUrl, {
+    const res = await fetch(url, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${HF_API_KEY}`,
-        'Content-Type': imageBlob.type || 'image/jpeg',
+        'Content-Type': blob.type || 'image/jpeg',
       },
-      body: imageBlob,
-      signal: AbortSignal.timeout(15000), // 15s timeout per model
+      body: blob,
+      signal: AbortSignal.timeout(14000),
     })
 
-    if (!res.ok) {
-      const errText = await res.text()
-      // Model may be loading — common with free HF tier
-      if (res.status === 503) {
-        return { status: 'loading', message: `${taskHint} model is warming up. Retry in 20s.` }
-      }
-      return { status: 'error', message: `${taskHint}: ${errText}` }
-    }
+    if (res.status === 503) return { status: 'loading', message: `${label} model warming up — retry in 20s` }
+    if (!res.ok) return { status: 'error', message: `${label}: HTTP ${res.status}` }
 
     const data = await res.json()
     return { status: 'ok', data }
   } catch (err: any) {
-    return { status: 'error', message: `${taskHint} model timeout or network error` }
+    return { status: 'timeout', message: `${label}: ${err.message}` }
   }
 }
 
-function interpretFireResult(data: any[]): { detected: boolean; confidence: number; label: string } {
-  if (!Array.isArray(data)) return { detected: false, confidence: 0, label: 'unknown' }
-  // Model returns [{label: 'Fire', score: 0.9}, {label: 'Non-Fire', score: 0.1}]
-  const fireClass = data.find((d: any) => d.label?.toLowerCase().includes('fire'))
-  const confidence = fireClass?.score ?? 0
-  return { detected: confidence > 0.55, confidence: Math.round(confidence * 100), label: fireClass?.label ?? 'Non-Fire' }
+// ─── Interpreters ──────────────────────────────────────────────────────────
+
+function interpretFire(data: any[]): { detected: boolean; confidence: number; label: string } {
+  if (!Array.isArray(data)) return { detected: false, confidence: 0, label: 'error' }
+  const fire = data.find(d => d.label?.toLowerCase().includes('fire'))
+  const conf = fire?.score ?? 0
+  return { detected: conf > CONFIDENCE_THRESHOLD, confidence: Math.round(conf * 100), label: fire?.label ?? 'Non-Fire' }
 }
 
-function interpretEmotionResult(data: any[]): { topEmotion: string; isAggressive: boolean; confidence: number } {
-  if (!Array.isArray(data)) return { topEmotion: 'neutral', isAggressive: false, confidence: 0 }
+function interpretEmotion(data: any[]): { emotion: string; isAggressive: boolean; confidence: number } {
+  if (!Array.isArray(data)) return { emotion: 'neutral', isAggressive: false, confidence: 0 }
   const sorted = [...data].sort((a, b) => b.score - a.score)
   const top = sorted[0]
-  const aggressiveEmotions = ['angry', 'disgust', 'fear', 'contempt']
-  const isAggressive = aggressiveEmotions.some(e => top?.label?.toLowerCase().includes(e))
-  return {
-    topEmotion: top?.label ?? 'neutral',
-    isAggressive,
-    confidence: Math.round((top?.score ?? 0) * 100),
-  }
+  const violent = ['angry', 'disgust', 'fear', 'contempt']
+  const isAggressive = violent.some(e => top?.label?.toLowerCase().includes(e))
+  return { emotion: top?.label ?? 'neutral', isAggressive, confidence: Math.round((top?.score ?? 0) * 100) }
 }
 
-function interpretObjectDetection(data: any[]): { persons: number; hasCrowding: boolean; objects: string[] } {
-  if (!Array.isArray(data)) return { persons: 0, hasCrowding: false, objects: [] }
-  const persons = data.filter((d: any) => d.label?.toLowerCase() === 'person').length
-  const objects = [...new Set(data.map((d: any) => d.label).filter(Boolean))]
-  return { persons, hasCrowding: persons >= 5, objects }
+function interpretHarassment(data: any[]): { detected: boolean; confidence: number; label: string } {
+  if (!Array.isArray(data)) return { detected: false, confidence: 0, label: 'safe' }
+  const unsafe = data.find(d =>
+    d.label?.toLowerCase() === 'nsfw' ||
+    d.label?.toLowerCase() === 'unsafe' ||
+    d.label?.toLowerCase().includes('explicit')
+  )
+  const conf = unsafe?.score ?? 0
+  // Slightly lower threshold for harassment — better to flag and review
+  return { detected: conf > 0.50, confidence: Math.round(conf * 100), label: unsafe?.label ?? 'safe' }
 }
+
+function interpretCrowd(data: any[]): { persons: number; hasCrowding: boolean; objects: string[] } {
+  if (!Array.isArray(data)) return { persons: 0, hasCrowding: false, objects: [] }
+  // DETR returns bounding box objects with labels
+  const personList = data.filter((d: any) => {
+    // Handle both classification and detection output formats
+    const label = d.label?.toLowerCase() ?? ''
+    return label === 'person' || label.includes('person')
+  })
+  const objects = [...new Set(data.map((d: any) => d.label).filter(Boolean))]
+  return { persons: personList.length, hasCrowding: personList.length >= 6, objects }
+}
+
+// ─── Main handler ──────────────────────────────────────────────────────────
 
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
     const imageFile = formData.get('frame') as File | null
-    const analysisType = (formData.get('type') as string) || 'all'
+    const type = (formData.get('type') as string) || 'all'
 
     if (!imageFile) {
-      return NextResponse.json({ error: 'No image frame provided. Send a video frame as "frame" field.' }, { status: 400 })
+      return NextResponse.json({ error: 'No frame provided. Send a video frame as "frame" field.' }, { status: 400 })
     }
 
     if (!HF_API_KEY) {
-      return NextResponse.json(
-        {
-          error: 'HF_API_KEY not configured.',
-          setup: 'Add HF_API_KEY=hf_xxxxxxxx to your .env.local file. Get a free key at huggingface.co → Settings → Access Tokens.',
-        },
-        { status: 503 }
-      )
+      return NextResponse.json({
+        error: 'HF_API_KEY not set in .env.local',
+        setup: 'Sign up at huggingface.co → Settings → Access Tokens → New Token (Read)',
+      }, { status: 503 })
     }
 
-    const imageBlob = new Blob([await imageFile.arrayBuffer()], { type: imageFile.type || 'image/jpeg' })
+    const blob = new Blob([await imageFile.arrayBuffer()], { type: imageFile.type || 'image/jpeg' })
 
-    // Run models in parallel based on requested analysis type
+    // Choose which models to run
     const tasks: Promise<any>[] = []
-    const taskNames: string[] = []
+    const keys: string[] = []
 
-    if (analysisType === 'all' || analysisType === 'fire') {
-      tasks.push(callHFModel(MODELS.fire, imageBlob, 'Fire Detection'))
-      taskNames.push('fire')
-    }
-    if (analysisType === 'all' || analysisType === 'emotion' || analysisType === 'aggression') {
-      tasks.push(callHFModel(MODELS.emotion, imageBlob, 'Emotion/Aggression'))
-      taskNames.push('emotion')
-    }
-    if (analysisType === 'all' || analysisType === 'crowd' || analysisType === 'persons') {
-      tasks.push(callHFModel(MODELS.objectDetection, imageBlob, 'Person/Crowd Detection'))
-      taskNames.push('persons')
-    }
+    if (type === 'all' || type === 'fire') { tasks.push(callModel(MODELS.fire, blob, 'Fire')); keys.push('fire') }
+    if (type === 'all' || type === 'emotion' || type === 'aggression') { tasks.push(callModel(MODELS.emotion, blob, 'Emotion')); keys.push('emotion') }
+    if (type === 'all' || type === 'harassment' || type === 'nsfw') { tasks.push(callModel(MODELS.harassment, blob, 'Harassment')); keys.push('harassment') }
+    if (type === 'all' || type === 'crowd' || type === 'persons') { tasks.push(callModel(MODELS.crowd, blob, 'Crowd')); keys.push('crowd') }
 
     const results = await Promise.all(tasks)
 
-    // Build structured response
     const response: Record<string, any> = {
       timestamp: new Date().toISOString(),
-      analysisType,
-      modelsUsed: taskNames,
+      type,
+      models: keys,
     }
 
-    taskNames.forEach((name, i) => {
-      const result = results[i]
-      if (result.status === 'ok') {
-        if (name === 'fire') response.fire = interpretFireResult(result.data)
-        if (name === 'emotion') response.emotion = interpretEmotionResult(result.data)
-        if (name === 'persons') response.crowd = interpretObjectDetection(result.data)
+    keys.forEach((key, i) => {
+      const r = results[i]
+      if (r.status === 'ok') {
+        if (key === 'fire')       response.fire       = interpretFire(r.data)
+        if (key === 'emotion')    response.emotion    = interpretEmotion(r.data)
+        if (key === 'harassment') response.harassment = interpretHarassment(r.data)
+        if (key === 'crowd')      response.crowd      = interpretCrowd(r.data)
       } else {
-        response[`${name}_status`] = result
+        response[`${key}_status`] = r
       }
     })
 
-    // Derive top-level alerts
-    const alerts: string[] = []
-    if (response.fire?.detected) alerts.push(`🔥 FIRE DETECTED (${response.fire.confidence}% confidence)`)
-    if (response.emotion?.isAggressive) alerts.push(`😡 AGGRESSION DETECTED — ${response.emotion.topEmotion} (${response.emotion.confidence}%)`)
-    if (response.crowd?.hasCrowding) alerts.push(`👥 OVERCROWDING — ${response.crowd.persons} persons detected`)
+    // Build alert list
+    const alerts: { type: string; message: string; severity: 'CRITICAL' | 'WARNING' }[] = []
+
+    if (response.fire?.detected)
+      alerts.push({ type: 'FIRE', message: `Fire/smoke detected (${response.fire.confidence}%)`, severity: 'CRITICAL' })
+
+    if (response.emotion?.isAggressive && response.emotion.confidence > 60)
+      alerts.push({ type: 'AGGRESSION', message: `Aggressive behavior: ${response.emotion.emotion} (${response.emotion.confidence}%)`, severity: response.emotion.confidence > 80 ? 'CRITICAL' : 'WARNING' })
+
+    if (response.harassment?.detected)
+      alerts.push({ type: 'SEXUAL_HARASSMENT', message: `Inappropriate conduct detected (${response.harassment.confidence}%). Immediate response required.`, severity: 'CRITICAL' })
+
+    if (response.crowd?.hasCrowding)
+      alerts.push({ type: 'OVERCROWDING', message: `${response.crowd.persons} persons detected — overcrowding risk`, severity: response.crowd.persons >= 10 ? 'CRITICAL' : 'WARNING' })
 
     response.alerts = alerts
-    response.alertLevel = alerts.length === 0 ? 'CLEAR' : alerts.length === 1 ? 'WARNING' : 'CRITICAL'
+    response.alertCount = alerts.length
+    response.alertLevel = alerts.length === 0
+      ? 'CLEAR'
+      : alerts.some(a => a.severity === 'CRITICAL') ? 'CRITICAL' : 'WARNING'
+
+    // Only escalate to Gemini if a critical alert was found and Gemini is needed for detail
+    response.requiresGemini = response.alertLevel === 'CLEAR' // true = no HF detections, Gemini should be called
 
     return NextResponse.json(response)
-  } catch (error: any) {
-    console.error('HF Analysis error:', error)
-    return NextResponse.json({ error: 'Analysis failed', details: error.message }, { status: 500 })
+  } catch (err: any) {
+    console.error('HF analysis error:', err)
+    return NextResponse.json({ error: 'Analysis failed', detail: err.message }, { status: 500 })
   }
 }
 
 export async function GET() {
   return NextResponse.json({
-    service: 'Suraksha AI — Hugging Face Multi-Model Analyzer',
-    description: 'Parallel AI inference for hospital security detection using free HF models.',
-    requiredEnvVars: {
-      HF_API_KEY: 'Your Hugging Face API key — get free at huggingface.co/settings/tokens',
-    },
+    service: 'Suraksha AI — HF Multi-Model Analyzer',
     models: {
-      fire_smoke: {
-        model: 'EdBianchi/vit-fire-detection',
-        task: 'Fire and smoke detection in hospital premises',
-        usage: 'POST with frame + type=fire',
-      },
-      emotion_aggression: {
-        model: 'dima806/facial_emotions_image_detection',
-        task: 'Detect aggression, anger, and distress in faces',
-        usage: 'POST with frame + type=emotion',
-      },
-      crowd_persons: {
-        model: 'facebook/detr-resnet-50',
-        task: 'Person counting and crowd detection',
-        usage: 'POST with frame + type=crowd',
-      },
+      fire:       { model: 'EdBianchi/vit-fire-detection',              task: 'Fire & smoke in hospital' },
+      emotion:    { model: 'dima806/facial_emotions_image_detection',   task: 'Anger / aggression / fear' },
+      harassment: { model: 'Falconsai/nsfw_image_classification',       task: 'Sexual harassment / inappropriate conduct' },
+      crowd:      { model: 'facebook/detr-resnet-50',                   task: 'Person & crowd detection' },
     },
     usage: {
       endpoint: 'POST /api/hf-analyze',
-      fields: {
-        frame: 'Image/JPEG frame extracted from video',
-        type: 'all | fire | emotion | aggression | crowd | persons',
-      },
+      fields: { frame: 'JPEG image (video frame)', type: 'all | fire | emotion | aggression | harassment | crowd' },
+      note: 'requiresGemini: true in response means HF found nothing — caller should invoke Gemini.',
     },
   })
 }

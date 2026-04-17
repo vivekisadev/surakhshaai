@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Clock, AlertTriangle, Shield, ShieldAlert, ChevronDown, ChevronUp } from "lucide-react"
+import { Clock, AlertTriangle, Shield, ShieldAlert, ChevronDown, ChevronUp, Cpu, Brain } from "lucide-react"
 import type { Timestamp } from "@/app/types"
 import { useState, useEffect, useRef } from "react"
 
@@ -101,11 +101,27 @@ export default function TimestampList({ timestamps, onTimestampClick }: Timestam
             </div>
 
             <div className="flex flex-col items-start w-full min-w-0 pr-2">
-              <div className="flex items-center gap-3 w-full mb-1">
+              <div className="flex items-center gap-2 w-full mb-1 flex-wrap">
                 <span className="font-mono text-sm sm:text-base font-bold text-white tracking-tighter bg-white/5 py-0.5 px-2 rounded-lg">{item.timestamp}</span>
                 {item.isDangerous && (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-red-500/20 text-red-400 border border-red-500/30 uppercase tracking-widest">
+                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-red-500/20 text-red-400 border border-red-500/30 uppercase tracking-widest">
                     ALARM
+                  </span>
+                )}
+                {/* Detection source badge */}
+                {(item as any).detectedBy === 'HuggingFace' ? (
+                  <span className="inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 font-mono uppercase tracking-widest">
+                    <Cpu className="w-2.5 h-2.5" /> HF Model
+                  </span>
+                ) : (item as any).detectedBy === 'Gemini' ? (
+                  <span className="inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded border border-blue-500/30 bg-blue-500/10 text-blue-400 font-mono uppercase tracking-widest">
+                    <Brain className="w-2.5 h-2.5" /> Gemini AI
+                  </span>
+                ) : null}
+                {/* Incident type */}
+                {(item as any).incidentType && (
+                  <span className="text-[9px] px-1.5 py-0.5 rounded border border-white/10 bg-white/5 text-white/50 font-mono uppercase tracking-widest">
+                    {(item as any).incidentType}
                   </span>
                 )}
               </div>

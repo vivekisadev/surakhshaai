@@ -222,130 +222,124 @@ export default function Page() {
   // -----------------------------
   // 4) TensorFlow detection loop
   // -----------------------------
+  // 4) TensorFlow detection loop — uses setTimeout at 6fps to avoid blocking main thread
+  // -----------------------------
   const runDetection = async () => {
     if (!isRecordingRef.current) return
-
-    // Check if ML models are ready before proceeding
     if (!mlModelsReady || !faceModelRef.current || !poseModelRef.current) {
-      detectionFrameRef.current = requestAnimationFrame(runDetection)
+      // Models not ready — check again in 500ms
+      detectionFrameRef.current = setTimeout(runDetection, 500) as unknown as number
       return
     }
-
-    // Throttle detection to ~10 FPS (every 100ms)
-    const now = performance.now()
-    if (now - lastDetectionTime.current < 100) {
-      detectionFrameRef.current = requestAnimationFrame(runDetection)
-      return
-    }
-    lastDetectionTime.current = now
 
     const video = videoRef.current
     const canvas = canvasRef.current
-    if (!video || !canvas) {
-      detectionFrameRef.current = requestAnimationFrame(runDetection)
+    if (!video || !canvas || video.readyState < 2) {
+      detectionFrameRef.current = setTimeout(runDetection, 200) as unknown as number
       return
     }
 
-    const ctx = canvas.getContext("2d")
+    const ctx = canvas.getContext('2d', { willReadFrequently: false })
     if (!ctx) {
-      detectionFrameRef.current = requestAnimationFrame(runDetection)
+      detectionFrameRef.current = setTimeout(runDetection, 200) as unknown as number
       return
     }
 
-    // Clear canvas and draw current video frame
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-    drawVideoToCanvas(video, canvas, ctx)
+    try {
+      // Draw current video frame to canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      drawVideoToCanvas(video, canvas, ctx)
 
-    // Scale for drawing predictions
-    const scaleX = canvas.width / video.videoWidth
-    const scaleY = canvas.height / video.videoHeight
+      const scaleX = canvas.width / (video.videoWidth || canvas.width)
+      const scaleY = canvas.height / (video.videoHeight || canvas.height)
 
-    // Face detection
-    if (faceModelRef.current) {
+      // --- Face Detection — hospital overlay style ---
       try {
         const predictions = await faceModelRef.current.estimateFaces(video, false)
         predictions.forEach((prediction: blazeface.NormalizedFace) => {
           const start = prediction.topLeft as [number, number]
           const end = prediction.bottomRight as [number, number]
-          const size = [end[0] - start[0], end[1] - start[1]]
+          const w = (end[0] - start[0]) * scaleX
+          const h = (end[1] - start[1]) * scaleY
+          const sx = start[0] * scaleX
+          const sy = start[1] * scaleY
 
-          const scaledStart = [start[0] * scaleX, start[1] * scaleY]
-          const scaledSize = [size[0] * scaleX, size[1] * scaleX]
+          // Hospital-style green detection box
+          ctx.strokeStyle = 'rgba(52, 211, 153, 0.9)' // emerald
+          ctx.lineWidth = 1.5
+          ctx.strokeRect(sx, sy, w, h)
 
-          // Draw bounding box
-          ctx.strokeStyle = "rgba(0, 255, 0, 0.8)"
-          ctx.lineWidth = 2
-          ctx.strokeRect(
-            scaledStart[0],
-            scaledStart[1],
-            scaledSize[0],
-            scaledSize[1]
-          )
+          // Corner accents
+          const corner = 8
+          ctx.strokeStyle = 'rgba(52, 211, 153, 1)'
+          ctx.lineWidth = 2.5
+          ;[[sx,sy],[sx+w,sy],[sx,sy+h],[sx+w,sy+h]].forEach(([cx,cy], i) => {
+            ctx.beginPath()
+            ctx.moveTo(cx + (i%2===0 ? corner : -corner), cy)
+            ctx.lineTo(cx, cy)
+            ctx.lineTo(cx, cy + (i<2 ? corner : -corner))
+            ctx.stroke()
+          })
 
-          // Draw confidence
+          // Label
           const confidence = Math.round((prediction.probability as number) * 100)
-          ctx.fillStyle = "white"
-          ctx.font = "16px Arial"
-          ctx.fillText(`${confidence}%`, scaledStart[0], scaledStart[1] - 5)
+          ctx.fillStyle = 'rgba(0,0,0,0.65)'
+          ctx.fillRect(sx, sy - 18, 130, 16)
+          ctx.fillStyle = 'rgba(52,211,153,1)'
+          ctx.font = '10px monospace'
+          ctx.fillText(`SUBJECT DETECTED • ${confidence}%`, sx + 4, sy - 5)
         })
-      } catch (err) {
-        console.error("Face detection error:", err)
-      }
-    }
+      } catch (e) { /* face detection error — silently skip */ }
 
-    // Pose detection
-    if (poseModelRef.current) {
+      // --- Pose Detection — highlight body keypoints ---
       try {
         const poses = await poseModelRef.current.estimatePoses(video)
         if (poses.length > 0) {
           const keypoints = poses[0].keypoints
-          // Convert TF keypoints to our Keypoint type
-          const convertedKeypoints: Keypoint[] = keypoints.map(kp => ({
-            x: kp.x,
-            y: kp.y,
-            score: kp.score ?? 0, // Use 0 as default if score is undefined
-            name: kp.name
+          const converted: Keypoint[] = keypoints.map(kp => ({
+            x: kp.x, y: kp.y, score: kp.score ?? 0, name: kp.name
           }))
-          setLastPoseKeypoints(convertedKeypoints)
+          setLastPoseKeypoints(converted)
 
-          keypoints.forEach((keypoint) => {
-            // Use nullish coalescing to provide a default value of 0
-            if ((keypoint.score ?? 0) > 0.3) {
-              const x = keypoint.x * scaleX
-              const y = keypoint.y * scaleY
+          // Determine if pose looks aggressive (arms raised above shoulders)
+          const leftWrist = keypoints.find(k => k.name === 'left_wrist')
+          const rightWrist = keypoints.find(k => k.name === 'right_wrist')
+          const leftShoulder = keypoints.find(k => k.name === 'left_shoulder')
+          const rightShoulder = keypoints.find(k => k.name === 'right_shoulder')
+          const armsRaised = (
+            (leftWrist && leftShoulder && leftWrist.y < leftShoulder.y - 30) ||
+            (rightWrist && rightShoulder && rightWrist.y < rightShoulder.y - 30)
+          )
 
-              // Draw keypoint
+          keypoints.forEach(kp => {
+            if ((kp.score ?? 0) > 0.35) {
+              const x = kp.x * scaleX
+              const y = kp.y * scaleY
               ctx.beginPath()
-              ctx.arc(x, y, 4, 0, 2 * Math.PI)
-              ctx.fillStyle = "rgba(255, 0, 0, 0.8)"
+              ctx.arc(x, y, 3, 0, 2 * Math.PI)
+              ctx.fillStyle = armsRaised ? 'rgba(239,68,68,0.9)' : 'rgba(96,165,250,0.9)'
               ctx.fill()
-
-              // Outer circle
-              ctx.beginPath()
-              ctx.arc(x, y, 6, 0, 2 * Math.PI)
-              ctx.strokeStyle = "white"
-              ctx.lineWidth = 1.5
-              ctx.stroke()
-
-              // Label (if available)
-              // Use nullish coalescing to provide a default value of 0
-              if ((keypoint.score ?? 0) > 0.5 && keypoint.name) {
-                ctx.fillStyle = "white"
-                ctx.font = "12px Arial"
-                ctx.fillText(`${keypoint.name}`, x + 8, y)
-              }
             }
           })
+
+          if (armsRaised) {
+            ctx.fillStyle = 'rgba(239,68,68,0.15)'
+            ctx.fillRect(0, 0, canvas.width, canvas.height)
+            ctx.fillStyle = 'rgba(239,68,68,1)'
+            ctx.font = 'bold 11px monospace'
+            ctx.fillText('⚠ AGGRESSIVE BEHAVIOR FLAGGED', 10, 20)
+          }
         }
-      } catch (err) {
-        console.error("Pose detection error:", err)
-      }
+      } catch (e) { /* pose error — skip */ }
+    } catch (err) {
+      console.error('Detection loop error:', err)
     }
 
-    // (Optional) Compute FPS
     lastFrameTimeRef.current = performance.now()
-
-    detectionFrameRef.current = requestAnimationFrame(runDetection)
+    // Schedule next detection at 6fps using setTimeout (not rAF)
+    if (isRecordingRef.current) {
+      detectionFrameRef.current = setTimeout(runDetection, 166) as unknown as number
+    }
   }
 
   // Helper: Draw video to canvas (maintaining aspect ratio)
@@ -699,17 +693,12 @@ export default function Page() {
     // Start recording with a timeslice of 1000ms (1 second)
     mediaRecorder.start(1000)
 
-    // Start the TensorFlow detection loop only if models are ready
+    // Start TF detection loop via setTimeout (not rAF) — avoids blocking main thread
     if (detectionFrameRef.current) {
-      cancelAnimationFrame(detectionFrameRef.current)
+      clearTimeout(detectionFrameRef.current as unknown as ReturnType<typeof setTimeout>)
     }
-    
-    // Only start detection if ML models are loaded
     if (mlModelsReady) {
-      lastDetectionTime.current = 0
-      detectionFrameRef.current = requestAnimationFrame(runDetection)
-    } else {
-      console.warn("ML models not ready yet, detection will start once loaded")
+      detectionFrameRef.current = setTimeout(runDetection, 100) as unknown as number
     }
 
     // Set up repeated frame analysis every 3 seconds
@@ -735,9 +724,9 @@ export default function Page() {
       mediaRecorderRef.current.stop()
     }
 
-    // Stop detection loop and analysis interval
+    // Stop detection (setTimeout-based)
     if (detectionFrameRef.current) {
-      cancelAnimationFrame(detectionFrameRef.current)
+      clearTimeout(detectionFrameRef.current as unknown as ReturnType<typeof setTimeout>)
       detectionFrameRef.current = null
     }
     if (analysisIntervalRef.current) {
