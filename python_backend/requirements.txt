@@ -4,6 +4,7 @@ opencv-python-headless
 ultralytics
 requests
 python-dotenv
+python-multipart
 numpy
 deepface
 tf-keras

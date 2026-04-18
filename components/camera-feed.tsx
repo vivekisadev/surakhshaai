@@ -7,15 +7,24 @@ interface CameraFeedProps {
   camera: Camera
   date?: Date
   onTimeUpdate?: (time: number) => void
+  mode?: "live" | "archive"
+  archiveUrl?: string
 }
 
-export function CameraFeed({ camera, date = new Date(), onTimeUpdate }: CameraFeedProps) {
+export function CameraFeed({ camera, date = new Date(), onTimeUpdate, mode = "live", archiveUrl }: CameraFeedProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [videoDimensions, setVideoDimensions] = useState({ width: 0, height: 0 })
   const [currentTime, setCurrentTime] = useState(0)
   const lastReportedTime = useRef<number>(-1)
   const rafRef = useRef<number | null>(null)
+
+  // Reload video source when URL or mode changes
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.load()
+    }
+  }, [camera.videoUrl, camera.thumbnail, archiveUrl, mode])
 
   // ResizeObserver — much better than window resize for per-element tracking
   useEffect(() => {
@@ -62,11 +71,14 @@ export function CameraFeed({ camera, date = new Date(), onTimeUpdate }: CameraFe
     }
   }, [onTimeUpdate])
 
+  const feedUrl = mode === "archive" ? (archiveUrl || camera.videoUrl) : (camera.videoUrl || camera.thumbnail)
+
   return (
     <div ref={containerRef} className="group relative w-full h-full overflow-hidden bg-black">
       {/* Camera Feed — hardware decode hints for smooth playback */}
       <video
         ref={videoRef}
+        key={feedUrl} // Key change forces re-render of video element
         className="absolute inset-0 h-full w-full object-cover"
         autoPlay
         muted
@@ -75,11 +87,11 @@ export function CameraFeed({ camera, date = new Date(), onTimeUpdate }: CameraFe
         preload="metadata"
         disablePictureInPicture
       >
-        <source src={camera.videoUrl || camera.thumbnail} type="video/mp4" />
+        <source src={feedUrl} type="video/mp4" />
       </video>
 
       {/* Bounding Boxes — only render when dimensions are known */}
-      {videoDimensions.width > 0 && (
+      {videoDimensions.width > 0 && mode === "live" && (
         <BoundingBoxesOverlay
           videoName={camera.name}
           currentTime={currentTime}
@@ -88,17 +100,23 @@ export function CameraFeed({ camera, date = new Date(), onTimeUpdate }: CameraFe
         />
       )}
 
-      {/* Live indicator top-right */}
-      <div className="absolute top-2 right-2 flex items-center gap-1.5 z-10">
-        <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-        <span className="text-[8px] font-mono uppercase tracking-widest text-white/70">LIVE</span>
+      {/* Feed Mode Indicator top-right */}
+      <div className="absolute top-2 right-2 flex items-center gap-1.5 z-10 bg-black/40 backdrop-blur-md px-2 py-1 rounded">
+        <span className={`w-1.5 h-1.5 rounded-full ${mode === "live" ? "bg-red-500 animate-pulse" : "bg-blue-400"}`} />
+        <span className="text-[8px] font-mono uppercase tracking-widest text-white/90">
+          {mode === "live" ? "LIVE" : "ARCHIVE"}
+        </span>
       </div>
 
       {/* Status icons top-left */}
-      <div className="absolute top-2 left-2 flex items-center gap-1.5 text-emerald-400 z-10">
+      <div className="absolute top-2 left-2 flex items-center gap-1.5 text-white/50 z-10 transition-colors group-hover:text-emerald-400">
         <Wifi className="h-3 w-3" />
         <Battery className="h-3 w-3" />
       </div>
+
+      {/* Neural Scanline Overlay (Visual only) */}
+      <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(255,0,0,0.03),rgba(0,255,0,0.01),rgba(0,0,255,0.03))] z-[5]" />
+      <div className="absolute inset-0 pointer-events-none bg-[length:100%_2px] opacity-[0.15] z-[6]" style={{ backgroundImage: "linear-gradient(to bottom, transparent 50%, #000 50%)" }} />
     </div>
   )
 }

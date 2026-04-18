@@ -11,7 +11,12 @@ export default async function Login(props: { searchParams: Promise<Message> }) {
     <div className="flex justify-center items-center min-h-screen w-full bg-background">
       <div className="w-full max-w-md px-4">
         <form className="flex flex-col w-full p-8 space-y-6 bg-card rounded-lg shadow-lg">
-          <h1 className="text-3xl font-bold text-center">Sign in</h1>
+          <div className="flex flex-col items-center gap-4">
+            <div className="flex items-center justify-center w-16 h-16 bg-white/5 border border-white/10 rounded-xl p-3 shadow-2xl shadow-black/50">
+              <img src="/image.png" alt="Suraksha Logo" className="w-full h-full object-contain" />
+            </div>
+            <h1 className="text-3xl font-bold text-center">Sign in</h1>
+          </div>
           <p className="text-sm text-center text-muted-foreground">
             Don't have an account?{" "}
             <Link className="text-primary font-medium underline" href="/sign-up">

@@ -22,6 +22,11 @@ export const metadata = {
   metadataBase: new URL(defaultUrl),
   title: "Suraksha AI — Hospital Security Intelligence",
   description: "AI-powered hospital security platform. Detect patient aggression, staff misconduct, and safety violations in real-time.",
+  icons: {
+    icon: "/image.png",
+    shortcut: "/image.png",
+    apple: "/image.png",
+  }
 };
 
 const geistSans = Geist({ display: "swap", subsets: ["latin"] });

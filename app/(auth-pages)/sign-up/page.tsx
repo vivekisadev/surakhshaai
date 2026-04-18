@@ -22,7 +22,10 @@ export default async function Signup(props: {
     <div className="flex justify-center items-center min-h-screen w-full bg-background">
       <div className="w-full max-w-md px-4">
         <form className="flex flex-col w-full p-8 space-y-6 bg-card rounded-lg shadow-lg">
-          <div className="space-y-2 text-center">
+          <div className="space-y-4 text-center flex flex-col items-center">
+            <div className="flex items-center justify-center w-16 h-16 bg-white/5 border border-white/10 rounded-xl p-3 shadow-2xl shadow-black/50">
+              <img src="/image.png" alt="Suraksha Logo" className="w-full h-full object-contain" />
+            </div>
             <h1 className="text-3xl font-bold">Sign up</h1>
             <p className="text-sm text-muted-foreground">
               Already have an account?{" "}

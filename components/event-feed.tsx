@@ -85,20 +85,18 @@ export function EventFeed({
 
   const processNewEvents = useCallback((newEvents: Event[]) => {
     const now = Date.now()
-    if (newEvents.length === 0 || now - lastEventTime < 10000) {
-      return
-    }
+    if (newEvents.length === 0) return
 
-    const randomEvent = newEvents[Math.floor(Math.random() * newEvents.length)]
-    const eventWithTimestamp = { ...randomEvent, addedAt: now }
-    
     setVisibleEvents(prev => {
-      const combined = [eventWithTimestamp, ...prev]
+      // Add all new events, not just one random one
+      const eventsWithTimestamp = newEvents.map(e => ({ ...e, addedAt: now }))
+      const combined = [...eventsWithTimestamp, ...prev]
+      // Keep only unique IDs
       const unique = Array.from(new Map(combined.map(e => [e.id, e])).values())
-      return unique.slice(0, 10)
+      return unique.slice(0, 15) // Show top 15
     })
     setLastEventTime(now)
-  }, [lastEventTime])
+  }, [])
 
   useEffect(() => {
     const newEvents = events.filter(event => {

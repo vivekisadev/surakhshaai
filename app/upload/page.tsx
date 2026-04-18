@@ -11,9 +11,49 @@ import { Input } from "@/components/ui/input"
 import VideoPlayer from "@/components/video-player"
 import TimestampList from "@/components/timestamp-list"
 import type { Timestamp } from "@/app/types"
-import { detectEvents, type VideoEvent } from "./actions"
 import Link from "next/link"
 import { saveVideoToSupabase } from "@/lib/supabaseStorage"
+
+// Direct client → Python backend analysis (no Server Action middleman)
+async function analyzeFrameLocally(video: HTMLVideoElement, time: number): Promise<{events: any[]}> {
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d');
+  if (!context) return { events: [] };
+
+  try {
+    video.currentTime = time;
+    await new Promise((resolve) => { video.onseeked = resolve; });
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    // Convert to JPEG blob and send directly to Python backend
+    const blob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob(resolve, 'image/jpeg', 0.85);
+    });
+    
+    if (!blob) return { events: [] };
+    
+    const formData = new FormData();
+    formData.append('file', blob, 'frame.jpg');
+    
+    const res = await fetch('http://localhost:8000/analyze_frame', {
+      method: 'POST',
+      body: formData,
+    });
+    
+    if (!res.ok) {
+      console.error(`[Analyze] Backend returned ${res.status}`);
+      return { events: [] };
+    }
+    
+    return await res.json();
+  } catch (error) {
+    console.error('[Analyze] Error:', error);
+    return { events: [] };
+  }
+}
+
 
 export default function UploadPage() {
   const [videoUrl, setVideoUrl] = useState<string>("")
@@ -27,23 +67,6 @@ export default function UploadPage() {
   const [videoName, setVideoName] = useState("")
   const videoRef = useRef<HTMLVideoElement>(null)
   const videoFileRef = useRef<File | null>(null)
-
-  const captureFrame = async (video: HTMLVideoElement, time: number): Promise<string | null> => {
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
-    if (!context) return null;
-
-    try {
-      video.currentTime = time;
-      await new Promise((resolve) => { video.onseeked = resolve; });
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      return canvas.toDataURL('image/jpeg', 0.8);
-    } catch (error) {
-      return null;
-    }
-  };
 
   const handleFileUpload = async (e: { target: { files: FileList | null } }) => {
     const file = e.target.files?.[0]
@@ -78,23 +101,24 @@ export default function UploadPage() {
 
       for (let time = 0; time < duration; time += interval) {
         setUploadProgress(Math.floor((time / duration) * 100))
-        const frame = await captureFrame(video, time)
-        if (frame) {
-          try {
-            if (time > 0) await new Promise(r => setTimeout(r, 2000));
-            const result = await detectEvents(frame)
-            if (result.events) {
-              result.events.forEach((event: VideoEvent) => {
-                const minutes = Math.floor(time / 60)
-                const seconds = Math.floor(time % 60)
-                newTimestamps.push({
-                  timestamp: `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`,
-                  description: event.description,
-                  isDangerous: event.isDangerous
-                })
+        
+        try {
+          const result = await analyzeFrameLocally(video, time)
+          if (result.events && result.events.length > 0) {
+            result.events.forEach((event: any) => {
+              const minutes = Math.floor(time / 60)
+              const seconds = Math.floor(time % 60)
+              newTimestamps.push({
+                timestamp: `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`,
+                description: event.description,
+                isDangerous: event.isDangerous ?? false
               })
-            }
-          } catch (err) {}
+            })
+            // Update in real-time so user sees results streaming in
+            setTimestamps([...newTimestamps])
+          }
+        } catch (err) {
+          console.error(`[Frame ${time}s] Analysis failed:`, err)
         }
       }
 

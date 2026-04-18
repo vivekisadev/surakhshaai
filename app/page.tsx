@@ -103,45 +103,45 @@ export default async function Home() {
           {/* Badge */}
           <div className="mb-6 border border-white/15 bg-white/5 backdrop-blur-sm rounded-full px-5 py-2">
             <span className="text-xs sm:text-sm font-medium bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
-              🏥 Protecting Doctors · Monitoring Staff · Securing Patients
+              🏥 PRO-GRADE MEDICAL INTELLIGENCE · SECURING HEALTHCARE HEROES
             </span>
           </div>
 
           {/* Headline */}
-          <h1 className="text-5xl sm:text-7xl lg:text-8xl font-bold leading-[1.1] tracking-tight">
+          <h1 className="text-5xl sm:text-7xl lg:text-8xl font-black leading-[1.05] tracking-tight">
             <span className="gradient-text-blue">Suraksha</span>{" "}
             <span className="text-white">AI</span>
           </h1>
-          <p className="mt-4 text-2xl sm:text-3xl font-light text-white/70 tracking-tight">
-            Hospital Security, Reimagined
+          <p className="mt-4 text-[11px] font-mono font-bold text-blue-400/80 uppercase tracking-[0.5em]">
+            Hospital Security Intelligence Hub
           </p>
 
           {/* Description */}
-          <p className="mt-6 text-base sm:text-lg text-white/55 leading-relaxed max-w-2xl">
-            AI that watches over your entire hospital 24/7 — detecting aggression against doctors, staff negligence, missing infants, fire hazards, unauthorized access, and more.
+          <p className="mt-8 text-base sm:text-lg text-white/55 leading-relaxed max-w-2xl font-medium">
+            A state-of-the-art surveillance ecosystem designed for medical environments. Powered by a <span className="text-blue-400">Dual-Layer Neural Engine</span> (YOLO11 + Groq Vision) to protect doctors, monitor patient safety, and secure critical hospital assets 24/7.
           </p>
 
           {/* CTAs */}
           <div className="mt-10 flex flex-col sm:flex-row gap-4 items-center">
-            <Link href="/sign-up" className="btn-primary px-8 py-3 text-base font-semibold">
-              Get Started Free
+            <Link href="/pre-analyzer" className="btn-primary px-10 py-4 text-sm font-black uppercase tracking-widest bg-blue-600 hover:bg-blue-500 rounded-full shadow-2xl shadow-blue-500/20">
+              Launch Forensic Analyzer
             </Link>
-            <Link href="/surveillance" className="btn-secondary px-8 py-3 text-base font-semibold">
-              View Dashboard
+            <Link href="/surveillance" className="btn-secondary px-10 py-4 text-sm font-black uppercase tracking-widest border border-white/10 hover:bg-white/5 rounded-full transition-all">
+              Live Command Center
             </Link>
           </div>
 
-          {/* Stats row */}
-          <div className="mt-16 flex gap-10 sm:gap-16 text-center">
+          {/* Core Feature highlight */}
+          <div className="mt-16 flex flex-wrap gap-4 sm:gap-10 justify-center">
             {[
-              { value: "99.7%", label: "Detection Accuracy", color: "text-blue-400" },
-              { value: "24/7", label: "Live Monitoring", color: "text-cyan-400" },
-              { value: "<3s", label: "Alert Response", color: "text-emerald-400" },
-              { value: "8+", label: "Incident Types", color: "text-purple-400" },
+              { value: "YOLO11", label: "Real-time Detection", color: "text-blue-400" },
+              { value: "GROQ L3.2", label: "AI Scene Reasoning", color: "text-cyan-400" },
+              { value: "FORENSIC", label: "Archive Analytics", color: "text-emerald-400" },
+              { value: "ZERO-LATENCY", label: "Local-First Core", color: "text-purple-400" },
             ].map((s, i) => (
-              <div key={i} className="flex flex-col items-center gap-1">
-                <span className={`text-2xl sm:text-3xl font-bold ${s.color}`}>{s.value}</span>
-                <span className="text-xs text-white/50 whitespace-nowrap">{s.label}</span>
+              <div key={i} className="flex flex-col items-center gap-1.5 p-4 bg-white/[0.03] border border-white/[0.06] rounded-xl backdrop-blur-md min-w-[140px]">
+                <span className={`text-base sm:text-lg font-black tracking-tight ${s.color}`}>{s.value}</span>
+                <span className="text-[9px] font-mono font-bold uppercase tracking-widest text-white/30">{s.label}</span>
               </div>
             ))}
           </div>

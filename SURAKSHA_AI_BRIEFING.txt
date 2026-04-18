@@ -1,338 +1,94 @@
 ================================================================================
   SURAKSHA AI — HOSPITAL SECURITY INTELLIGENCE SYSTEM
-  PROJECT BRIEFING DOCUMENT
+  OFFICIAL PROJECT BRIEFING // VERSION 2.0 (HACKATHON FINAL)
 ================================================================================
 
-Prepared for: Project Presentation
-Platform: Web Application (Next.js 14)
-Version: 1.0
+Prepared for: Final Project Presentation & Deployment
+Platform: Unified Next.js 15 Command Center
+Detection Engine: Hybrid Neural Stack (Local YOLOv11 + Groq Llama 3.2 Vision)
 Date: April 2026
 
 --------------------------------------------------------------------------------
-  1. EXECUTIVE SUMMARY
+  1. THE MISSION: PROTECTING THE PROTECTORS
 --------------------------------------------------------------------------------
 
-Suraksha AI is an AI-powered hospital security intelligence platform designed
-to protect healthcare professionals, monitor staff compliance, ensure patient
-safety, and enforce hospital security policies 24/7 — using your existing CCTV
-infrastructure with no new hardware investment required.
+Suraksha AI is a high-performance, medical-grade security platform designed 
+specifically for the unique challenges of healthcare environments. 
 
-The system combines the power of Google's Gemini Vision AI with specialized
-free Hugging Face models to deliver fast, accurate, multi-threat detection
-across every area of a hospital — from emergency rooms to pharmacies, from
-ICUs to parking lots.
-
-"Suraksha" (सुरक्षा) means "protection" or "security" in Hindi — a fitting
-name for a system built to protect the people who protect us.
+Our mission is to safeguard "Healthcare Heroes" (Doctors and Nurses) while 
+ensuring the highest standard of patient safety. Suraksha AI transforms existing 
+hospital CCTV infrastructure into an active, intelligent shield that detects 
+violence, negligence, and safety hazards in sub-second response times.
 
 --------------------------------------------------------------------------------
-  2. PROBLEM STATEMENT
+  2. HYBRID NEURAL ARCHITECTURE (NEW)
 --------------------------------------------------------------------------------
 
-Indian and global hospitals face a growing security crisis:
+We have moved beyond simple cloud-only detection to a powerful DUAL-LAYER stack:
 
-  → Attacks on doctors and nurses are increasing every year
-  → Staff negligence (sleeping on duty, patient abandonment) goes unnoticed
-  → Missing infants from maternity wards — a critical safety failure
-  → Fire hazards in hospital labs and kitchens remain undetected until too late
-  → Unauthorized persons accessing pharmacies, ICUs, and OTs
-  → Patient falls in unmonitored corridors cause serious injuries
-  → Manual CCTV monitoring is ineffective — humans miss 95% of incidents
+  LAYER 1: LOCAL PROXIMITY (YOLOv11)
+  → High-speed object detection for people, fire, and suspicious motion.
+  → Runs locally to ensure zero-latency monitoring.
+  → Continuously feeds the Real-time Event Stream.
 
-Traditional CCTV systems record but do NOT analyze. Suraksha AI transforms
-passive recording into active, intelligent, real-time security.
-
---------------------------------------------------------------------------------
-  3. WHAT SURAKSHA AI DETECTS
---------------------------------------------------------------------------------
-
-The platform is designed to detect the following hospital-specific incidents:
-
-  3.1 VIOLENCE & AGGRESSION AGAINST STAFF
-      -----------------------------------------
-      • Physical attacks on doctors and nurses
-      • Verbal aggression and threatening behavior
-      • Mob formation around staff areas
-      • Altercations in waiting rooms and corridors
-      Detection: Gemini Vision + Emotion AI (HF: dima806/facial_emotions)
-
-  3.2 STAFF NEGLIGENCE & DUTY VIOLATIONS
-      -----------------------------------------
-      • Nurse/doctor sleeping on duty
-      • Patient call lights being ignored
-      • Staff abandoning patient areas
-      • Hygiene protocol violations (not wearing PPE)
-      • Unauthorized loitering in restricted zones
-      Detection: Gemini Vision (hospital behavior analysis)
-
-  3.3 MISSING INFANT / NEWBORN PROTECTION
-      -----------------------------------------
-      • Unauthorized removal of infants from maternity/NICU
-      • Perimeter monitoring of all ward exits
-      • Alert if an infant is carried near unauthorized exits
-      • After-hours movement detection in newborn units
-      Detection: Gemini Vision Perimeter + Person Tracking
-
-  3.4 FIRE & SMOKE DETECTION
-      -----------------------------------------
-      • Real-time fire and smoke detection across all zones
-      • Kitchen, lab, generator room monitoring
-      • Automatic evacuation alert trigger
-      • Multi-zone simultaneous monitoring
-      Detection: HF Model → EdBianchi/vit-fire-detection (free, specialized)
-
-  3.5 PATIENT FALLS
-      -----------------------------------------
-      • Fall detection in wards, corridors, washrooms
-      • Unattended patient getting out of bed alerts
-      • Night-time monitoring when staff presence is low
-      • Immediate nursing station notification
-      Detection: Gemini Vision (pose + scene analysis)
-
-  3.6 UNAUTHORIZED ZONE ACCESS
-      -----------------------------------------
-      • ICU and OT perimeter enforcement
-      • Pharmacy restricted area monitoring
-      • Drug vault access tracking
-      • After-hours intrusion detection
-      • Visitor overstay and trespass alerts
-      Detection: Gemini Vision + DETR Object Detection (HF)
-
-  3.7 CROWD & OVERCROWDING
-      -----------------------------------------
-      • Emergency room overcrowding alerts
-      • Crowd gathering analysis (mob risk detection)
-      • Person counting for capacity enforcement
-      Detection: HF Model → facebook/detr-resnet-50 (free)
-
-  3.8 EMOTIONAL DISTRESS / AGGRESSION FLAGS
-      -----------------------------------------
-      • Facial expression analysis — anger, fear, distress
-      • Early warning before physical violence occurs
-      • De-escalation support through preemptive security alerts
-      Detection: HF Model → dima806/facial_emotions_image_detection (free)
+  LAYER 2: COGNITIVE REASONING (Groq Llama 3.2 Vision)
+  → Intelligent scene analysis to understand complex human behavior.
+  → Reasoning engine for "Why is this a threat?" explanations.
+  → Multimodal logic for detecting aggression, negligence, and falls.
 
 --------------------------------------------------------------------------------
-  4. AI TECHNOLOGY STACK
+  3. UPDATED PLATFORM CAPABILITIES
 --------------------------------------------------------------------------------
 
-Suraksha AI uses a MULTI-MODEL approach to distribute AI workload:
+  3.1 UNIFIED MONITORING CENTER (Live + Archive)
+      → A single "Command Center" that merges Live CCTV feeds with analyzed 
+        Archive recordings.
+      → One-click toggle between "Live Stream" and "Incident Playback".
+      → Instant Alert Injection: Archive incidents trigger sidebar alarms in 
+        real-time, perfectly synced with the video playhead.
 
-  TASK                        MODEL                               COST
-  ─────────────────────────────────────────────────────────────────────
-  Fire & Smoke Detection      EdBianchi/vit-fire-detection         FREE (HF)
-  Facial Emotion/Aggression   dima806/facial_emotions_image        FREE (HF)
-  Person & Crowd Detection    facebook/detr-resnet-50              FREE (HF)
-  Complex Scene Analysis      Google Gemini 1.5 Flash              Gemini API
-  Violence / Staff Behavior   Gemini Vision (hospital prompt)      Gemini API
-  Incident Summarization      Gemini 1.5 Flash                     Gemini API
+  3.2 NEURAL FORENSIC ANALYZER (Consolidated)
+      → The central hub for processing new clips or reviewing existing evidence.
+      → Real-time "Neural Scan" visualization during video processing.
+      → Automatic timestamp generation with AI-written incident descriptions.
+      → Direct evidence library integration for legal and HR reporting.
 
-  Design principle:
-    Simple visual classification → Free Hugging Face models
-    Complex human behavior analysis → Google Gemini Vision
-
-  API KEYS NEEDED:
-  ─────────────────────────────────────────────────────────────────────
-  GEMINI_API_KEY     → Google AI Studio (free tier available)
-                       Get at: https://aistudio.google.com
-
-  HF_API_KEY         → Hugging Face Access Token (completely free!)
-                       Get at: https://huggingface.co/settings/tokens
-                       Sign up free → Settings → Access Tokens → New Token
-
-  SUPABASE_URL       → Already configured (database + file storage)
-  SUPABASE_ANON_KEY  → Already configured (authentication)
+  3.3 HOSPITAL-SPECIFIC THREAT DETECTION
+      • AGGRESSION: Instant detection of physical violence in triage/ER zones.
+      • FALLS: 24/7 detection of patient falls in corridors and wards.
+      • FIRE: Real-time visual fire/smoke detection across all critical zones.
+      • INFANT SECURITY: Monitoring maternity exits for unauthorized movement.
+      • STAFF NEGLIENCE: Flagging duty abandonment or sleeping in high-risk units.
 
 --------------------------------------------------------------------------------
-  5. PLATFORM FEATURES
+  4. ADVANCED UI/UX FEATURES
 --------------------------------------------------------------------------------
 
-  5.1 LIVE DASHBOARD — Hospital Security Matrix
-      → Real-time multi-camera grid view of all hospital zones
-      → Color-coded incident severity across all feeds
-      → Live Event Feed with hospital-specific incident classification
-      → Camera click-to-expand with full-screen viewing
-      → Hospital-wide status: cameras online, active incidents, staff count
-
-  5.2 AI VIDEO ANALYZER (Pre-Analyzer + Deep Analysis)
-      → Upload any CCTV clip for AI analysis
-      → Multi-model parallel scan (fire, aggression, crowd simultaneously)
-      → Gemini Vision scene analysis with incident timeline
-      → Exportable evidence report with timestamps
-      → Pre-analysis metadata scan before full AI processing
-
-  5.3 REALTIME LIVE FEED
-      → Real-time streaming camera analysis
-      → Frame-by-frame AI inference on live footage
-      → Instant alert dispatch via Telegram, Email, WhatsApp
-      → Live incident log with camera source identification
-
-  5.4 INCIDENT LIBRARY
-      → All analyzed clips stored and searchable in Supabase
-      → Incident timeline generated per video
-      → Filter by department, incident type, date, severity
-      → Evidence export for legal / HR / administrative action
-
-  5.5 MULTI-CHANNEL ALERT SYSTEM
-      → 📱 Telegram (hospital security group — instant notification)
-      → 📧 Email (HOD, Chief Security Officer)
-      → 💬 WhatsApp (duty nurse / on-call doctor)
-      → Alert contains: incident type, hospital zone, timestamp, camera ID
-      → One-click "Dispatch Security" from dashboard event feed
-
-  5.6 SECURE AUTHENTICATION
-      → Supabase-powered login/signup
-      → Role-based access: Security Chief / HOD / Nurse / Admin
-      → Session management and activity audit trail
+  → MATRIX HOVER LIGHT: Hovering an alert in the feed highlights the relevant 
+    camera slot and dims others for immediate focus.
+  → SIREN ALERTS: Dynamic, color-coded event feed with animated sirens for 
+    Critical incidents (Fire, Aggression).
+  → NEURAL SCAN OVERLAY: Diagnostic pixelated scanlines on analysis screens 
+    to show real-time AI processing progress.
 
 --------------------------------------------------------------------------------
-  6. HOSPITAL DEPARTMENTS COVERED
+  5. TECHNICAL STACK & DEPENDENCIES
 --------------------------------------------------------------------------------
 
-  Department               Primary Threats Detected
-  ─────────────────────────────────────────────────────────────────────
-  Emergency Room           Patient aggression, mob, overcrowding
-  General Wards (A/B/C)    Staff negligence, patient falls, unauthorized visits
-  Maternity / NICU         Infant abduction, perimeter breach, unauthorized entry
-  ICU                      Unauthorized access, patient monitoring gaps
-  Operation Theater        Sterile zone enforcement, unauthorized entry
-  Pharmacy                 Drug theft, controlled substance access
-  Hospital Kitchen / Labs  Fire, smoke, equipment misuse
-  Nursing Stations         Staff duty monitoring, sleeping, call-light response
-  Corridors & Lifts        Violence, loitering, unauthorized movement
-  Entry Gates & Parking    Visitor management, after-hours intruders
+  Frontend:    Next.js 15 (App Router), TypeScript, Framer Motion, Tailwind CSS
+  Backend:     Python FastAPI (Local Inference Engine), Supabase (Auth + DB)
+  AI Models:   YOLOv11 (Fast Detections), Llama 3.2 Vision (AI Reasoning)
+  Storage:     Secure Supabase Cloud Storage for all Incident Evidence
+  Alerts:      Integrated Telegram Bot & Real-time Dashboard Notifications
 
 --------------------------------------------------------------------------------
-  7. TECHNICAL ARCHITECTURE
+  6. PROJECT STATUS: MISSION READY
 --------------------------------------------------------------------------------
 
-  Frontend:    Next.js 14 (App Router) + TypeScript + Tailwind CSS
-  Backend:     Next.js API Routes (serverless edge functions)
-  Database:    Supabase (PostgreSQL + File Storage)
-  Auth:        Supabase Auth (JWT-based, role-ready)
-  AI Layer:
-    → Google Gemini 1.5 Flash (complex scene + behavior analysis)
-    → Hugging Face Inference API (3 specialized free models)
-    → Parallel model execution (minimizes API response latency)
-  Alerts:
-    → Telegram Bot API
-    → Email via SMTP / Resend
-    → WhatsApp Business API
-  UI:          React + Framer Motion + Lucide Icons
-  Routing:     Next.js App Router (file-based)
+  Suraksha AI is no longer a prototype—it is a production-ready surveillance 
+  ecosystem. By focusing on the hospital niche, we bridge the gap between 
+  generic security and specialized life-saving medical intelligence.
 
-  Key API Routes:
-    POST /api/hf-analyze     → Hugging Face multi-model inference
-    POST /api/pre-analyze    → Video metadata pre-scan
-    POST /api/analyze        → Full Gemini video analysis
-    POST /api/send-telegram  → Telegram alert dispatch
-    POST /api/send-email     → Email alert dispatch
-    POST /api/send-whatsapp  → WhatsApp alert dispatch
-    POST /api/chat           → AI chat interface (Gemini)
-    POST /api/upload         → Video upload to Supabase storage
-
-  Key Pages:
-    /                  Landing page + feature overview
-    /surveillance      Hospital Security Matrix (live dashboard)
-    /pre-analyzer      Video upload + AI analysis flow
-    /realtime          Live camera feed with real-time inference
-    /library           Incident archive + past video analyses
-    /upload            Direct video upload to storage
-    /sign-in           Secure hospital staff login
-    /sign-up           Hospital onboarding and registration
-
---------------------------------------------------------------------------------
-  8. HOW IT WORKS — STEP BY STEP
---------------------------------------------------------------------------------
-
-  Step 1: Hospital connects existing CCTV to Suraksha AI platform
-  Step 2: All cameras appear in the live Hospital Security Matrix
-  Step 3: System continuously runs parallel AI inference:
-            Fire/smoke   → HF model check every 5 seconds
-            Crowd/persons → HF model check every 10 seconds
-            Behavior     → Gemini Vision on flagged/suspicious frames
-  Step 4: When an incident is detected:
-            → Alert appears instantly in real-time Event Feed
-            → Security officer receives Telegram + Email + WhatsApp
-            → Relevant camera is highlighted in dashboard
-  Step 5: Security officer can:
-            → Click event to expand that camera's live view
-            → Issue a formal escalation alert to senior staff
-            → Export incident report for HR / legal action
-  Step 6: All footage is archived in the Incident Library
-
---------------------------------------------------------------------------------
-  9. WHY SURAKSHA AI — COMPETITIVE ADVANTAGES
---------------------------------------------------------------------------------
-
-  ✓ Hospital-specific — not a generic surveillance tool
-  ✓ Multi-model AI — no single-point failure or API dependency
-  ✓ Free HF models reduce AI operational cost by 60-70%
-  ✓ No new hardware — works with existing CCTV systems
-  ✓ Multi-channel alerts — 3 channels simultaneously
-  ✓ Full legal evidence trail with AI-generated timelines
-  ✓ Built for Indian hospitals — Hindi naming, local context
-  ✓ Premium UI designed for security command centers
-  ✓ Modular — add more detection models anytime
-  ✓ Offline-resilient — Supabase local cache fallback
-
---------------------------------------------------------------------------------
-  10. SETUP REQUIREMENTS
---------------------------------------------------------------------------------
-
-  1. Clone the repository: kwala_ai-main
-  2. Install dependencies:  npm install
-  3. Create .env.local with:
-
-       NEXT_PUBLIC_SUPABASE_URL=<your-supabase-url>
-       NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-supabase-anon-key>
-       GEMINI_API_KEY=<your-gemini-api-key>
-       HF_API_KEY=hf_xxxxxxxxxxxxxxxx          ← GET THIS FREE
-       TELEGRAM_BOT_TOKEN=<telegram-bot-token>
-       TELEGRAM_CHAT_ID=<hospital-security-group-id>
-       WHATSAPP_API_KEY=<whatsapp-business-api-key>
-       EMAIL_FROM=alerts@yourhospital.com
-       RESEND_API_KEY=<resend-api-key>
-
-  4. Run development server: npm run dev
-  5. Open in browser: http://localhost:3000
-
-  Notes:
-  → HF_API_KEY is FREE — go to huggingface.co → sign up → Settings → Tokens
-  → Only Supabase + Gemini keys are required for core functionality
-  → Alert channels (Telegram, WhatsApp, Email) are optional but recommended
-
---------------------------------------------------------------------------------
-  11. FUTURE ROADMAP
---------------------------------------------------------------------------------
-
-  PHASE 1 — CURRENT (Completed)
-  ✓ Hospital-branded platform (Suraksha AI)
-  ✓ Full landing page with all incident types
-  ✓ Live Security Matrix dashboard
-  ✓ Gemini AI video analysis
-  ✓ Free Hugging Face multi-model integration
-  ✓ Multi-channel alert system (Telegram/Email/WhatsApp)
-  ✓ Incident Library with past videos
-  ✓ Secure hospital authentication
-
-  PHASE 2 — IN PROGRESS
-  → Mobile app for on-duty security officers (React Native)
-  → Face recognition for blacklisted visitors
-  → Automatic PDF incident report generation
-  → Incident heatmap by hospital zone
-  → HRMS integration for staff duty tracking
-
-  PHASE 3 — FUTURE
-  → Body language / gait analysis for threat prediction
-  → Predictive risk scoring per zone
-  → Two-way intercom from dashboard to security cameras
-  → Hospital network SaaS — multi-branch management
-  → Hospital analytics dashboard (monthly/weekly incident trends)
-  → Integration with hospital CCTV DVR systems via RTSP streams
-
-================================================================================
-  END OF BRIEFING DOCUMENT
-  Suraksha AI — Protecting the Protectors
-  © 2026 Suraksha AI. All rights reserved.
+  "Protecting the ones who protect us."
+  © 2026 Suraksha AI Platform. All rights reserved.
 ================================================================================

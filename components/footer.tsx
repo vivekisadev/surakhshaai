@@ -7,14 +7,11 @@ export default function Footer() {
       <div className="w-[75%] mx-auto py-16 flex flex-row justify-between gap-10">
 
         {/* Brand */}
-        <div className="flex flex-col gap-4 max-w-[280px]">
+        <div className="flex flex-col gap-6 max-w-[280px]">
           <div className="flex items-center gap-2">
-            <div className="flex items-center justify-center w-7 h-7 bg-blue-600/20 border border-blue-500/40 rounded-sm">
-              <Shield className="w-4 h-4 text-blue-400" />
+            <div className="flex items-center justify-center w-24 h-24 bg-white/5 border border-white/10 rounded-2xl p-3 shadow-2xl shadow-black/80">
+              <img src="/image.png" alt="Suraksha Logo" className="w-full h-full object-contain" />
             </div>
-            <h2 className="text-xl font-bold font-mono">
-              SURAKSHA<span className="text-blue-400">AI</span>
-            </h2>
           </div>
           <p className="text-white/50 text-sm leading-relaxed">
             Hospital-grade security intelligence. Protecting doctors, monitoring staff, and ensuring patient safety — 24/7.

@@ -22,12 +22,18 @@ function PluginManager() {
 
   const fetchPlugins = async () => {
     try {
-      const res = await fetch("http://localhost:8000/plugins")
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 3000)
+      const res = await fetch("http://localhost:8000/plugins", { signal: controller.signal })
+      clearTimeout(timeoutId)
+      
+      if (!res.ok) throw new Error("Server response not ok")
       const data = await res.json()
       setPlugins(data)
       setLoading(false)
     } catch (e) {
-      console.error("Failed to fetch plugins", e)
+      console.warn("Backend server not reachable — plugin manager idle", e)
+      // Don't set loading to false yet, keep trying silently
     }
   }
 
@@ -105,12 +111,17 @@ export default function SurveillancePageClient() {
   const [activeCameraIds, setActiveCameraIds] = useState<Set<string>>(() => new Set(allCameras.map(c => c.id)))
   const [expandedDepts, setExpandedDepts] = useState<Set<string>>(new Set(locations.map(l => l.id)))
   const [selectorOpen, setSelectorOpen] = useState(false)
+  const [archiveSelectorOpen, setArchiveSelectorOpen] = useState(false)
 
   const [selectedArchiveVideos, setSelectedArchiveVideos] = useState<VideoMeta[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [selectedCamera, setSelectedCamera] = useState<string | null>(null)
+  
+  // Track source for each camera: { cameraId: { mode: 'live' | 'archive', video?: VideoMeta } }
+  const [cameraSources, setCameraSources] = useState<Record<string, { mode: "live" | "archive", video?: VideoMeta }>>({})
   const [videoTimes, setVideoTimes] = useState<Record<string, number>>({})
   const [hoveredCamera, setHoveredCamera] = useState<string | null>(null)
+  const [allArchiveVideos, setAllArchiveVideos] = useState<VideoMeta[]>([])
 
   // Batch video time updates (performance fix)
   const pendingTimesRef = useRef<Record<string, number>>({})
@@ -129,6 +140,7 @@ export default function SurveillancePageClient() {
     async function load() {
       setIsLoading(true)
       const all = await fetchAllVideosFromSupabase()
+      setAllArchiveVideos(all)
       if (ids.length > 0) setSelectedArchiveVideos(all.filter(v => ids.includes(v.id)))
       setIsLoading(false)
     }
@@ -176,12 +188,64 @@ export default function SurveillancePageClient() {
     return map
   }, [])
 
-  // Incident counts for header stats
   const incidentCount = events.length
   const criticalCount = events.filter(e => {
-    const t = e.type.toLowerCase()
-    return t.includes("aggression") || t.includes("assault") || t.includes("fall") || t.includes("fire")
+    const t = (e.type || "").toLowerCase()
+    return t.includes("aggression") || t.includes("assault") || t.includes("fall") || t.includes("fire") || t.includes("danger")
   }).length
+
+  // Derived archived events based on current playback of archive videos
+  const activeArchiveEvents = useMemo(() => {
+    const list: any[] = []
+    
+    // Check all sources (both library selections and camera slot overrides)
+    const sourcesToTrack = [
+      ...selectedArchiveVideos.map(v => ({ id: v.id, video: v })),
+      ...Object.entries(cameraSources).map(([id, src]) => ({ id, video: src.video }))
+    ]
+
+    sourcesToTrack.forEach(src => {
+      if (src.video?.timestamps) {
+        const currentTime = videoTimes[src.id] || 0
+        src.video.timestamps.forEach(ts => {
+          const [m, s] = ts.timestamp.split(":").map(Number)
+          const tsSeconds = m * 60 + s
+          
+          // CRITICAL: We set the timestamp.getTime() to match the tsSeconds 
+          // so the EventFeed's time-sync logic (ABS difference < 1s) triggers it!
+          const syncTimestamp = new Date(tsSeconds * 1000)
+
+          list.push({
+            id: `arch-${src.id}-${ts.timestamp}`,
+            type: ts.description, // USE RAW DESCRIPTION SO ICON MAPPING WORKS
+            crimeType: [ts.isDangerous ? "Critical" : "Neutral"],
+            timestamp: syncTimestamp, 
+            time: ts.timestamp,
+            description: ts.description,
+            isDangerous: ts.isDangerous,
+            videoId: src.video?.id,
+            isArchive: true,
+            camera: {
+              id: src.id,
+              name: src.video?.name || "Archive Cam",
+              address: "SECURE STORAGE ZONE",
+              department: "ARCHIVE"
+            }
+          })
+        })
+      }
+    })
+    return list
+  }, [cameraSources, selectedArchiveVideos, videoTimes])
+
+  // Merge live events with playing archive events
+  const mergedEvents = useMemo(() => {
+    return [...activeArchiveEvents, ...events].sort((a, b) => {
+      const timeA = a.time || ""
+      const timeB = b.time || ""
+      return timeB.localeCompare(timeA)
+    })
+  }, [activeArchiveEvents, events])
 
   return (
     <div className="min-h-screen bg-[#09090b] text-neutral-300 relative flex flex-col pt-16 font-sans">
@@ -369,6 +433,82 @@ export default function SurveillancePageClient() {
               </AnimatePresence>
             </div>
 
+            {/* ── ARCHIVE VIDEO SELECTOR ────────────────────────────────────────── */}
+            <div className="bg-neutral-900/80 border border-neutral-800 rounded-xl overflow-hidden mt-3">
+              <div className="w-full flex items-center justify-between px-4 py-3 hover:bg-neutral-800/30 transition-colors">
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setArchiveSelectorOpen(p => !p)}
+                  onKeyDown={e => e.key === "Enter" && setArchiveSelectorOpen(p => !p)}
+                  className="flex items-center gap-2 flex-1 cursor-pointer"
+                >
+                  <Monitor className="w-3.5 h-3.5 text-yellow-400" />
+                  <span className="text-xs font-mono uppercase tracking-widest text-neutral-300">Archive Library</span>
+                  <span className="ml-1 px-1.5 py-0.5 rounded bg-yellow-500/15 border border-yellow-500/20 text-[9px] font-mono text-yellow-400">
+                    {selectedArchiveVideos.length} selected
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setArchiveSelectorOpen(p => !p)}
+                    onKeyDown={e => e.key === "Enter" && setArchiveSelectorOpen(p => !p)}
+                    className="cursor-pointer"
+                  >
+                    {archiveSelectorOpen ? <ChevronUp className="w-4 h-4 text-neutral-500" /> : <ChevronDown className="w-4 h-4 text-neutral-500" />}
+                  </div>
+                </div>
+              </div>
+
+              <AnimatePresence>
+                {archiveSelectorOpen && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden border-t border-neutral-800"
+                  >
+                    <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {allArchiveVideos.map(video => {
+                        const isSelected = selectedArchiveVideos.some(v => v.id === video.id)
+                        return (
+                          <label key={video.id} className={`flex flex-col gap-2 p-3 rounded-lg border cursor-pointer transition-all ${isSelected ? 'bg-yellow-500/10 border-yellow-500/30' : 'bg-neutral-800/20 border-neutral-800 hover:border-neutral-700'}`}>
+                            <div className="flex items-center gap-2.5">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => {
+                                  if (isSelected) {
+                                    setSelectedArchiveVideos(p => p.filter(v => v.id !== video.id))
+                                  } else {
+                                    setSelectedArchiveVideos(p => [...p, video])
+                                  }
+                                }}
+                                className="w-3.5 h-3.5 rounded accent-yellow-500 cursor-pointer"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="text-[10px] font-mono text-neutral-200 truncate">{video.name}</div>
+                                <div className="text-[8px] font-mono text-neutral-600 uppercase tracking-widest">{video.id.slice(0, 8)}...</div>
+                              </div>
+                              <Activity className={`w-3 h-3 ${isSelected ? 'text-yellow-400 animate-pulse' : 'text-neutral-700'}`} />
+                            </div>
+                          </label>
+                        )
+                      })}
+                      {allArchiveVideos.length === 0 && (
+                        <div className="col-span-full py-6 text-center text-[10px] font-mono text-neutral-600 uppercase tracking-widest">
+                          No videos found in library
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
             {/* Archive analysis section */}
             <AnimatePresence>
               {selectedArchiveVideos.length > 0 && (
@@ -382,35 +522,46 @@ export default function SurveillancePageClient() {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {selectedArchiveVideos.map(video => (
-                      <div key={video.id} className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden hover:border-blue-500/40 transition-colors group">
-                        <div className="relative aspect-video bg-black">
-                          {video.publicUrl && (
-                            <video src={video.publicUrl} autoPlay loop muted playsInline className="w-full h-full object-cover opacity-75 group-hover:opacity-95 transition-opacity" />
-                          )}
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent" />
-                          <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-black/70 backdrop-blur-sm border border-white/10 rounded px-2 py-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" />
-                            <span className="text-[9px] font-mono text-white/80 uppercase tracking-widest truncate max-w-[160px]">{video.name}</span>
+                    {selectedArchiveVideos.map(video => {
+                      const isHighlighted = hoveredCamera === video.id
+                      const isDimmed = hoveredCamera !== null && !isHighlighted
+                      
+                      return (
+                        <motion.div 
+                          key={video.id} 
+                          animate={{ opacity: isDimmed ? 0.35 : 1, scale: isHighlighted ? 1.02 : 1 }}
+                          className={`bg-neutral-900 border rounded-xl overflow-hidden transition-all duration-200 group ${isHighlighted ? 'border-yellow-500 shadow-[0_0_20px_rgba(234,179,8,0.15)]' : 'border-neutral-800 hover:border-blue-500/40'}`}
+                          onMouseEnter={() => setHoveredCamera(video.id)}
+                          onMouseLeave={() => setHoveredCamera(null)}
+                        >
+                          <div className="relative aspect-video bg-black">
+                            {video.publicUrl && (
+                              <video src={video.publicUrl} autoPlay loop muted playsInline className="w-full h-full object-cover opacity-75 group-hover:opacity-95 transition-opacity" />
+                            )}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent" />
+                            <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-black/70 backdrop-blur-sm border border-white/10 rounded px-2 py-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" />
+                              <span className="text-[9px] font-mono text-white/80 uppercase tracking-widest truncate max-w-[160px]">{video.name}</span>
+                            </div>
+                            <button
+                              onClick={() => setSelectedArchiveVideos(p => p.filter(v => v.id !== video.id))}
+                              className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center bg-black/60 hover:bg-red-500/30 border border-white/10 hover:border-red-500/40 rounded transition-colors"
+                            >
+                              <X className="h-3 w-3 text-white/60 hover:text-red-400" />
+                            </button>
                           </div>
-                          <button
-                            onClick={() => setSelectedArchiveVideos(p => p.filter(v => v.id !== video.id))}
-                            className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center bg-black/60 hover:bg-red-500/30 border border-white/10 hover:border-red-500/40 rounded transition-colors"
-                          >
-                            <X className="w-3 h-3 text-white/60 hover:text-red-400" />
-                          </button>
-                        </div>
-                        <div className="p-3 flex items-center justify-between">
-                          <div className="text-[10px] font-mono text-neutral-500 truncate max-w-[200px]">{video.name}</div>
-                          <a
-                            href={`/video/${video.id}`}
-                            className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-widest text-blue-400 hover:text-blue-300 border border-blue-500/20 hover:border-blue-400/40 px-2 py-1 rounded transition-colors"
-                          >
-                            <Activity className="w-3 h-3" /> Analyze
-                          </a>
-                        </div>
-                      </div>
-                    ))}
+                          <div className="p-3 flex items-center justify-between">
+                            <div className="text-[10px] font-mono text-neutral-500 truncate max-w-[200px]">{video.name}</div>
+                            <a
+                              href={`/video/${video.id}`}
+                              className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-widest text-blue-400 hover:text-blue-300 border border-blue-500/20 hover:border-blue-400/40 px-2 py-1 rounded transition-colors"
+                            >
+                              <Activity className="w-3 h-3" /> Analyze
+                            </a>
+                          </div>
+                        </motion.div>
+                      )
+                    })}
                   </div>
                 </motion.div>
               )}
@@ -468,7 +619,52 @@ export default function SurveillancePageClient() {
                         >
                           {/* Video feed — 16:9 */}
                           <div className="aspect-video relative camera-scanline camera-sweep">
-                            <CameraFeed camera={camera} onTimeUpdate={time => handleTimeUpdate(camera.id, time)} />
+                            <CameraFeed 
+                              camera={camera} 
+                              mode={cameraSources[camera.id]?.mode || "live"}
+                              archiveUrl={cameraSources[camera.id]?.video?.publicUrl}
+                              onTimeUpdate={time => handleTimeUpdate(camera.id, time)} 
+                            />
+                            
+                            {/* Source Selector Overlay */}
+                            <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                              <select 
+                                className="bg-black/80 text-[8px] font-mono text-white border border-white/20 rounded px-1.5 py-1 outline-none pointer-events-auto cursor-pointer"
+                                value={cameraSources[camera.id]?.mode || "live"}
+                                onChange={(e) => {
+                                  const mode = e.target.value as "live" | "archive"
+                                  if (mode === "live") {
+                                    setCameraSources(prev => ({ ...prev, [camera.id]: { mode: "live" } }))
+                                  } else {
+                                    // Default to first archive video if switching to archive mode
+                                    setCameraSources(prev => ({ ...prev, [camera.id]: { mode: "archive", video: allArchiveVideos[0] } }))
+                                  }
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <option value="live">📡 LIVE FEED</option>
+                                <option value="archive">📁 ARCHIVE</option>
+                              </select>
+                            </div>
+
+                            {/* Archive Video Picker (shows only if in archive mode) */}
+                            {cameraSources[camera.id]?.mode === "archive" && (
+                              <div className="absolute top-10 left-0 right-0 px-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <select 
+                                  className="w-full bg-blue-600/90 text-[8px] font-mono text-white border border-blue-400/30 rounded px-2 py-1.5 outline-none pointer-events-auto cursor-pointer shadow-xl"
+                                  value={cameraSources[camera.id]?.video?.id}
+                                  onChange={(e) => {
+                                    const video = allArchiveVideos.find(v => v.id === e.target.value)
+                                    setCameraSources(prev => ({ ...prev, [camera.id]: { mode: "archive", video } }))
+                                  }}
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  {allArchiveVideos.map(v => (
+                                    <option key={v.id} value={v.id}>{v.name}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            )}
                           </div>
 
                           {/* Bottom info bar */}
@@ -476,12 +672,16 @@ export default function SurveillancePageClient() {
                             <div className="flex items-start justify-between gap-2">
                               <div className="min-w-0">
                                 <div className="flex items-center gap-1.5 mb-0.5">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0 animate-pulse" />
-                                  <span className="text-[10px] font-mono font-semibold text-neutral-200 uppercase tracking-wider truncate">LIVE</span>
+                                  <span className={`w-1.5 h-1.5 rounded-full ${cameraSources[camera.id]?.mode === 'archive' ? 'bg-blue-400' : 'bg-red-500 animate-pulse'} flex-shrink-0`} />
+                                  <span className="text-[10px] font-mono font-semibold text-neutral-200 uppercase tracking-wider truncate">
+                                    {cameraSources[camera.id]?.mode === 'archive' ? 'ARCHIVE REPLAY' : 'LIVE'}
+                                  </span>
                                   <span className="mx-1 text-neutral-700">·</span>
                                   <span className="text-[10px] font-mono font-semibold text-neutral-300 uppercase tracking-wider truncate">{camera.name}</span>
                                 </div>
-                                <p className="text-[9px] text-neutral-600 font-mono truncate leading-none">{camera.address}</p>
+                                <p className="text-[9px] text-neutral-600 font-mono truncate leading-none">
+                                  {cameraSources[camera.id]?.mode === 'archive' ? `Source: ${cameraSources[camera.id]?.video?.name}` : camera.address}
+                                </p>
                               </div>
                               {/* Incident badge from analysis */}
                               {incStyle && (
@@ -528,7 +728,7 @@ export default function SurveillancePageClient() {
               </div>
               <div className="max-h-[380px] overflow-y-auto pr-1" style={{ scrollbarWidth: "thin", scrollbarColor: "#27272a transparent" }}>
                 <EventFeed
-                  events={events}
+                  events={mergedEvents}
                   videoTimes={videoTimes}
                   onEventHover={setHoveredCamera}
                   onEventClick={handleEventClick}
