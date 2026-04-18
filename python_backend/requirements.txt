@@ -6,5 +6,3 @@ requests
 python-dotenv
 python-multipart
 numpy
-deepface
-tf-keras
