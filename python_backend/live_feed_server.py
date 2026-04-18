@@ -731,7 +731,9 @@ async def analyze_video_endpoint(file: UploadFile = File(...)):
 
 if __name__ == '__main__':
     import uvicorn
+    # Use the PORT assigned by Render/Railway, or default to 8000 for local dev
+    port = int(os.environ.get("PORT", 8000))
     print("\n" + "="*60)
-    print(" SURAKSHA AI REAL-TIME INFERENCE SERVER STARTING")
+    print(f" SURAKSHA AI REAL-TIME INFERENCE SERVER STARTING ON PORT {port}")
     print("="*60 + "\n")
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=port)
